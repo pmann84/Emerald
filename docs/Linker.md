@@ -17,3 +17,7 @@ You can compile an assembly file using the following command (easiest way is to 
 ```powershell
 link /MACHINE:X64 /SUBSYSTEM:CONSOLE /OUT:<filename>.exe /NODEFAULTLIB /ENTRY:main <filename>.o
 ```
+
+## Linux
+ld test.o -o test
+

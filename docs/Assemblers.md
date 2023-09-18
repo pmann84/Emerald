@@ -25,3 +25,9 @@ You can install NASM for windows and then compile to a .o using
 ```powershell
 & 'C:\Program Files\NASM\nasm.exe' -fwin64 <filename>.asm -o <filename>.o
 ```
+
+## Linux
+
+nasm -felf64 test.asm
+
+Syscalls can be found [here](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md)
