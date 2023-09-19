@@ -1,123 +1,34 @@
-#include <iostream>
+#include "Tokeniser.hpp"
+#include "Parser.hpp"
+#include "Generator.hpp"
+#include "Assembler.hpp"
+#include "Linker.hpp"
 
 #include <argparse.h>
+
+#include <iostream>
 #include <fstream>
-#include <optional>
 
-enum class TokenType
+void handleErrors(const std::vector<std::string>& errors)
 {
-    return_,
-    int_lit,
-    expr_end, // nominally a semi-colon
-};
-
-struct Token
-{
-    TokenType token;
-    std::optional<std::string> value;
-};
-
-struct TokeniseResult
-{
-    std::vector<Token> tokens;
-    bool success;
-    std::vector<std::string> errors;
-};
-
-TokeniseResult tokenise(const std::string& srcStr)
-{
-    std::vector<Token> tokens{};
-    std::vector<std::string> errors{};
-    std::stringstream buf;
-    for (size_t i = 0; i < srcStr.length(); ++i)
+    std::cerr << "Failed to compile Emerald source!" << std::endl;
+    for (auto& error : errors)
     {
-        const auto srcChar = srcStr.at(i);
-        if (std::isalpha(srcChar))
-        {
-            buf << srcChar;
-            i++;
-            while (std::isalnum(srcStr.at(i))) {
-                buf << srcStr.at(i);
-                i++;
-            }
-            i--;
-
-            // Check if it's a key word
-            if (buf.str() == "return")
-            {
-                tokens.push_back({ .token = TokenType::return_ });
-                buf.str("");
-            }
-            else
-            {
-                errors.emplace_back("Error compiling source file.");
-                return { .tokens = {}, .success = false, .errors = errors };
-            }
-        }
-        else if (std::isdigit(srcChar))
-        {
-            buf << srcChar;
-            i++;
-            while (std::isdigit(srcStr.at(i))) {
-                buf << srcStr.at(i);
-                i++;
-            }
-            i--;
-            tokens.push_back({ .token = TokenType::int_lit, .value = buf.str() });
-            buf.str("");
-        }
-        else if (srcChar == ';')
-        {
-            tokens.push_back({ .token = TokenType::expr_end });
-        }
-        else if (std::isspace(srcChar))
-        {
-            // Ignore whitespace
-            continue;
-        }
-        else
-        {
-            errors.emplace_back("Error compiling source file.");
-            return { .tokens = {}, .success = false, .errors = errors };
-        }
+        std::cerr << "Error: " << error << std::endl;
     }
-
-    return { .tokens = tokens, .success = true, .errors = errors };
-}
-
-std::string tokensToAsm(const std::vector<Token>& tokens)
-{
-    std::stringstream outputAsm;
-    outputAsm <<"global _start\n\n_start:\n";
-
-    for (auto i = 0; i < tokens.size(); ++i)
-    {
-        const auto& token = tokens.at(i);
-        if (token.token == TokenType::return_)
-        {
-            if (i+1 < tokens.size() && tokens.at(i+1).token == TokenType::int_lit)
-            {
-                if (i+2 < tokens.size() && tokens.at(i+2).token == TokenType::expr_end)
-                {
-                    outputAsm << "\tmov rax, 60\n";
-                    outputAsm << "\tmov rdi, " << tokens.at(i+1).value.value() << "\n";
-                    outputAsm << "\tsyscall\n";
-                }
-            }
-        }
-    }
-    return outputAsm.str();
+    exit(1);
 }
 
 int main(int argc, char** argv)
 {
     // Parse the arguments
-    auto parser = argparse::argument_parser("Emerald", "");
-    parser.add_argument("src").help("Source file to compile.");
-    parser.parse_args(argc, argv);
+    auto argParser = argparse::argument_parser("Emerald", "");
+    argParser.add_argument("src").help("Source file to compile.");
+    argParser.add_argument({"-o", "-out"}).help("Optional output name.");
+    argParser.parse_args(argc, argv);
 
     // Get the source file path
-    auto srcFilePath = parser.get<std::string>("src");
+    auto srcFilePath = argParser.get<std::string>("src");
 
     // Open the file for reading
     std::fstream srcFile(srcFilePath, std::ios::in);
@@ -139,29 +50,57 @@ int main(int argc, char** argv)
         }
     }
 
+    // Initialise a compile result
+    Result<int> compileResult = { .result = 0, .success = true, .errors = {}};
+
     // Lexing
-    const auto tokeniseResult = tokenise(srcStr);
+    Tokeniser tokeniser(std::move(srcStr));
+    auto tokeniseResult = tokeniser.tokenise();
     if (!tokeniseResult.success) {
-        std::cerr << "Failed to compile source file " << srcFilePath << std::endl;
-        std::cerr << tokeniseResult.errors.size() << " errors found: " << std::endl;
-        for(const auto error : tokeniseResult.errors)
-        {
-            std::cerr << error << std::endl;
-        }
-        return 1;
+        compileResult.errors.insert(
+            compileResult.errors.end(),
+            tokeniseResult.errors.begin(),
+            tokeniseResult.errors.end()
+        );
     }
 
     // Parsing
-    const auto parsedAsm = tokensToAsm(tokeniseResult.tokens);
+    Parser parser(std::move(tokeniseResult.result));
+    const auto ast = parser.parse();
 
-    // Output to a file
+    if (!ast.success)
     {
-        std::fstream outputFile("./out.asm", std::ios::out);
-        outputFile << parsedAsm;
+        compileResult.errors.insert(
+                compileResult.errors.end(),
+                ast.errors.begin(),
+                ast.errors.end()
+        );
+        handleErrors(compileResult.errors);
     }
 
-    std::system("nasm -felf64 out.asm");
-    std::system("ld out.o -o out");
+    // Generation
+    Generator generator(ast.result);
+    const auto generatedAsm = generator.generateProgram();
 
+    compileResult.success = compileResult.errors.empty();
+
+    if (compileResult.success)
+    {
+        // Construct output name
+        std::string outName = "out";
+        argParser.try_get<std::string>("out", outName);
+
+        // Generate assembly
+        Assembler assembler(outName);
+        assembler.generate(generatedAsm);
+
+        // Link
+        Linker linker(outName);
+        linker.link();
+    }
+    else
+    {
+        handleErrors(compileResult.errors);
+    }
     return 0;
 }
