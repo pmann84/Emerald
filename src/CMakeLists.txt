@@ -6,6 +6,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     main.cpp
     Result.hpp
     NodeVisitor.hpp
+    Variable.hpp
+    CompilerError.hpp
     Tokeniser.hpp Tokeniser.cpp
     Parser.hpp Parser.cpp
     Generator.hpp Generator.cpp

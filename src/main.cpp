@@ -82,6 +82,12 @@ int main(int argc, char** argv)
     Generator generator(ast.result);
     const auto generatedAsm = generator.generateProgram();
 
+    if (!generatedAsm.success)
+    {
+        compileResult.errors.insert(compileResult.errors.end(), generatedAsm.errors.begin(), generatedAsm.errors.end());
+        handleErrors(compileResult.errors);
+    }
+
     compileResult.success = compileResult.errors.empty();
 
     if (compileResult.success)
@@ -92,7 +98,7 @@ int main(int argc, char** argv)
 
         // Generate assembly
         Assembler assembler(outName);
-        assembler.generate(generatedAsm);
+        assembler.generate(generatedAsm.result);
 
         // Link
         Linker linker(outName);
