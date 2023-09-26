@@ -8,19 +8,6 @@
 #include <vector>
 #include <map>
 
-//// Regex to match
-//static std::map<std::string, TokenType> TokenMap = {
-//        {"return", TokenType::return_},
-//        {"[0-9]*", TokenType::int_lit},
-//        {";", TokenType::expr_end},
-//        {"(", TokenType::open_paren},
-//        {")", TokenType::close_paren},
-//        {"let", TokenType::let},
-//        {"=", TokenType::equals},
-//};
-
-using TokenVector = std::vector<Token>;
-
 class Tokeniser
 {
 public:

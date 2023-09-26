@@ -1,3 +1,4 @@
+#include <cassert>
 #include "Parser.hpp"
 #include "Nodes.hpp"
 
@@ -110,6 +111,26 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
                 multNode->rhs = exprRhs.value();
                 expr->expr = multNode;
             }
+            else if (op.token == TokenType::Minus)
+            {
+                auto minusNode = m_allocator.alloc<Node::BinExprMinus>();
+                nodeLhsExpr->expr = exprLhs->expr;
+                minusNode->lhs = nodeLhsExpr;
+                minusNode->rhs = exprRhs.value();
+                expr->expr = minusNode;
+            }
+            else if (op.token == TokenType::ForwardSlash)
+            {
+                auto divNode = m_allocator.alloc<Node::BinExprDiv>();
+                nodeLhsExpr->expr = exprLhs->expr;
+                divNode->lhs = nodeLhsExpr;
+                divNode->rhs = exprRhs.value();
+                expr->expr = divNode;
+            }
+            else
+            {
+                assert(false);
+            }
             exprLhs->expr = expr;
         }
     }
@@ -165,7 +186,7 @@ std::optional<Node::Statement*> Parser::parseStatement()
     return {};
 }
 
-std::optional<Node::Term *> Parser::parseTerm()
+std::optional<Node::Term*> Parser::parseTerm()
 {
     if (auto intLit = tryConsume(TokenType::IntLit))
     {
@@ -181,6 +202,20 @@ std::optional<Node::Term *> Parser::parseTerm()
         expr->identifier = ident.value();
         auto term = m_allocator.alloc<Node::Term>();
         term->expr = expr;
+        return term;
+    }
+    else if (auto openParen = tryConsume(TokenType::OpenParen))
+    {
+        auto expr = parseExpr();
+        if (!expr.has_value())
+        {
+            addError("Expected expression after open parenthesis.");
+        }
+        tryConsume(TokenType::CloseParen, "Expected close parenthesis.");
+        auto termParen = m_allocator.alloc<Node::TermParen>();
+        termParen->expr = expr.value();
+        auto term = m_allocator.alloc<Node::Term>();
+        term->expr = termParen;
         return term;
     }
     return {};

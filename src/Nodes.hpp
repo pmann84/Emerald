@@ -27,14 +27,29 @@ namespace Node {
         Expr *lhs, *rhs;
     };
 
+    struct BinExprMinus
+    {
+        Expr *lhs, *rhs;
+    };
+
+    struct BinExprDiv
+    {
+        Expr *lhs, *rhs;
+    };
+
     struct BinExpr
     {
-        std::variant<BinExprAdd*, BinExprMult*> expr;
+        std::variant<BinExprAdd*, BinExprMult*, BinExprMinus*, BinExprDiv*> expr;
+    };
+
+    struct TermParen
+    {
+        Expr* expr;
     };
 
     struct Term
     {
-        std::variant<IntLiteral*, Identifier*> expr;
+        std::variant<IntLiteral*, Identifier*, TermParen*> expr;
     };
 
     struct Expr

@@ -45,40 +45,17 @@ Result<TokenVector> Tokeniser::tokenise()
             tokens.push_back({ .token = TokenType::IntLit, .value = buf.str() });
             buf.str("");
         }
-        else if (peek().value() == ';')
-        {
-            consume();
-            tokens.push_back({ .token = TokenType::ExprEnd });
-        }
-        else if (peek().value() == '(')
-        {
-            consume();
-            tokens.push_back({ .token = TokenType::OpenParen });
-        }
-        else if (peek().value() == ')')
-        {
-            consume();
-            tokens.push_back({ .token = TokenType::CloseParen });
-        }
-        else if (peek().value() == '=')
-        {
-            consume();
-            tokens.push_back({ .token = TokenType::Equals });
-        }
-        else if (peek().value() == '+')
-        {
-            consume();
-            tokens.push_back({ .token = TokenType::Plus });
-        }
-        else if (peek().value() == '*')
-        {
-            consume();
-            tokens.push_back({ .token = TokenType::Asterisk });
-        }
         else if (std::isspace(peek().value()))
         {
             // Ignore whitespace
             consume();
+        }
+        else if (SymbolTokenMap.contains(peek().value()))
+        {
+            // Single symbol
+            auto symToken = SymbolTokenMap.at(peek().value());
+            consume();
+            tokens.push_back({ .token = symToken });
         }
     }
     // Reset the position into the source in case tokenise is called twice

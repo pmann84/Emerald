@@ -50,6 +50,10 @@ public:
         output() << "\tmov rax, " << intLitExpr->intLit.value.value() << "\n";
         generator().push("rax");
     }
+    void operator()(const Node::TermParen* parenTerm)
+    {
+        generator().generateExpr(parenTerm->expr);
+    }
 };
 
 class ExprVisitor : public NodeVisitor
@@ -73,8 +77,8 @@ public:
     void operator()(const Node::BinExprAdd* add)
     {
         // This pushes both onto the stop of the stack
-        generator().generateExpr(add->lhs);
         generator().generateExpr(add->rhs);
+        generator().generateExpr(add->lhs);
 
         generator().pop("rax");
         generator().pop("rbx");
@@ -84,12 +88,34 @@ public:
     void operator()(const Node::BinExprMult* mult)
     {
         // This pushes both onto the stop of the stack
-        generator().generateExpr(mult->lhs);
         generator().generateExpr(mult->rhs);
+        generator().generateExpr(mult->lhs);
 
         generator().pop("rax");
         generator().pop("rbx");
         output() << "\tmul rbx\n";
+        generator().push("rax");
+    }
+    void operator()(const Node::BinExprMinus* minus)
+    {
+        // This pushes both onto the stop of the stack
+        // Need to do RHS first otherwise we are minusing in the wrong order (associativity and all that)
+        generator().generateExpr(minus->rhs);
+        generator().generateExpr(minus->lhs);
+        generator().pop("rax");
+        generator().pop("rbx");
+        output() << "\tsub rax, rbx\n";
+        generator().push("rax");
+    }
+    void operator()(const Node::BinExprDiv* div)
+    {
+        // This pushes both onto the stop of the stack
+        generator().generateExpr(div->rhs);
+        generator().generateExpr(div->lhs);
+
+        generator().pop("rax");
+        generator().pop("rbx");
+        output() << "\tdiv rbx\n";
         generator().push("rax");
     }
 };
