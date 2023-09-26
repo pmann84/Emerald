@@ -7,12 +7,12 @@
 enum class TokenType
 {
     Return,
+    Let,
     IntLit,
+    Identifier,
     ExprEnd,
     OpenParen,
     CloseParen,
-    Identifier,
-    Let,
     Equals,
     Plus,
     Asterisk,
@@ -30,6 +30,11 @@ static std::map<char, TokenType> SymbolTokenMap = {
     {'*', TokenType::Asterisk},
     {'-', TokenType::Minus},
     {'/', TokenType::ForwardSlash},
+};
+
+static std::map<std::string, TokenType> KeywordTokenMap = {
+    {"return", TokenType::Return},
+    {"let", TokenType::Let},
 };
 
 inline std::optional<uint8_t> binaryPrecedence(TokenType tokenType)

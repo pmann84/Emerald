@@ -20,14 +20,10 @@ Result<TokenVector> Tokeniser::tokenise()
             }
 
             // Check if it's a key word
-            if (buf.str() == "return")
+            if(KeywordTokenMap.contains(buf.str()))
             {
-                tokens.push_back({ .token = TokenType::Return });
-                buf.str("");
-            }
-            else if (buf.str() == "let")
-            {
-                tokens.push_back({ .token = TokenType::Let });
+                auto keywordToken = KeywordTokenMap.at(buf.str());
+                tokens.push_back({ .token = keywordToken });
                 buf.str("");
             }
             else
