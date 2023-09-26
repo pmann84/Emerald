@@ -1,39 +1,23 @@
 #pragma once
 
+#include "Result.hpp"
+#include "Tokens.hpp"
+
 #include <string>
 #include <optional>
 #include <vector>
 #include <map>
-#include "Result.hpp"
 
-enum class TokenType
-{
-    return_,
-    int_lit,
-    expr_end,
-    open_paren,
-    close_paren,
-    identifier,
-    let,
-    equals,
-};
-
-struct Token
-{
-    TokenType token;
-    std::optional<std::string> value;
-};
-
-// Regex to match
-static std::map<std::string, TokenType> TokenMap = {
-        {"return", TokenType::return_},
-        {"[0-9]*", TokenType::int_lit},
-        {";", TokenType::expr_end},
-        {"(", TokenType::open_paren},
-        {")", TokenType::close_paren},
-        {"let", TokenType::let},
-        {"=", TokenType::equals},
-};
+//// Regex to match
+//static std::map<std::string, TokenType> TokenMap = {
+//        {"return", TokenType::return_},
+//        {"[0-9]*", TokenType::int_lit},
+//        {";", TokenType::expr_end},
+//        {"(", TokenType::open_paren},
+//        {")", TokenType::close_paren},
+//        {"let", TokenType::let},
+//        {"=", TokenType::equals},
+//};
 
 using TokenVector = std::vector<Token>;
 

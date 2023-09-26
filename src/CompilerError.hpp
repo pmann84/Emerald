@@ -5,6 +5,9 @@
 
 struct Error
 {
+    std::string File;
+    std::string Line;
+    std::string Pos;
     std::string Message;
 };
 

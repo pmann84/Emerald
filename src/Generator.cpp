@@ -13,7 +13,7 @@ Result<std::string> Generator::generateProgram()
     output() <<"global _start\n\n_start:\n";
 
     if (!m_root.statements.empty()) {
-        for (const auto &statement: m_root.statements) {
+        for (const auto statement: m_root.statements) {
             generateStatement(statement);
         }
     }
@@ -27,16 +27,28 @@ Result<std::string> Generator::generateProgram()
     return { .result = output().str(), .success=m_errors.empty(), .errors=m_errors };
 }
 
-void Generator::generateStatement(const Node::Statement &statement)
+void Generator::generateStatement(const Node::Statement* statement)
 {
     StatementVisitor statementVisitor(*this);
-    std::visit(statementVisitor, statement.statement);
+    std::visit(statementVisitor, statement->statement);
 }
 
-void Generator::generateExpr(const Node::Expr &expr)
+void Generator::generateExpr(const Node::Expr* expr)
 {
     ExprVisitor exprVisitor(*this);
-    std::visit(exprVisitor, expr.expr);
+    std::visit(exprVisitor, expr->expr);
+}
+
+void Generator::generateBinExp(const Node::BinExpr *binExpr)
+{
+    BinExprVisitor binExprVisitor(*this);
+    std::visit(binExprVisitor, binExpr->expr);
+}
+
+void Generator::generateTerm(const Node::Term *term)
+{
+    TermVisitor termVisitor(*this);
+    std::visit(termVisitor, term->expr);
 }
 
 std::stringstream &Generator::output()

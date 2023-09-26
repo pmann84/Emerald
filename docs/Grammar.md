@@ -1,13 +1,21 @@
 $$
 \begin{align}
-[\text{prog}] &\to [\text{stmt}]^* \\
-[\text{stmt}] &\to \begin{cases}
-    \text{return} \; [\text{expr}]; \\
-    \text{let}\space\text{identifier} = [\text{expr}];
+[\text{Prog}] &\to [\text{Stmt}]^* \\
+[\text{Stmt}] &\to \begin{cases}
+    \text{return} \; [\text{Expr}]; \\
+    \text{let}\space\text{identifier} = [\text{Expr}];
 \end{cases}\\
-[\text{expr}] &\to \begin{cases}
+[\text{Expr}] &\to \begin{cases}
+    [\text{Term}] \\
+    [\text{BinExpr}]
+\end{cases} \\
+[\text{BinExpr}] &\to \begin{cases}
+    [\text{Expr}] * [\text{Expr}] & \text{prec = 1} \\
+    [\text{Expr}] + [\text{Expr}] & \text{prec = 0} \\
+\end{cases} \\
+[\text{Term}] &\to \begin{cases}
     \text{int\_lit} \\
-    \text{identifier}
-\end{cases}
+    \text{identifier} \\
+\end{cases} \\
 \end{align}
 $$

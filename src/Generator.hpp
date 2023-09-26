@@ -2,6 +2,7 @@
 
 #include "Parser.hpp"
 #include "Variable.hpp"
+#include "Nodes.hpp"
 
 #include <sstream>
 #include <unordered_map>
@@ -17,8 +18,10 @@ public:
     std::vector<std::string>& errors();
     size_t stackLocation() const;
 
-    void generateStatement(const Node::Statement& statement);
-    void generateExpr(const Node::Expr& expr);
+    void generateStatement(const Node::Statement* statement);
+    void generateExpr(const Node::Expr* expr);
+    void generateBinExp(const Node::BinExpr* binExpr);
+    void generateTerm(const Node::Term* term);
 
     void push(const std::string& reg);
     void pop(const std::string& reg);

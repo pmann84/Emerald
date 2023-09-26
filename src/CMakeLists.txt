@@ -8,6 +8,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     NodeVisitor.hpp
     Variable.hpp
     CompilerError.hpp
+    ArenaAllocator.hpp
+    Tokens.hpp
+    Nodes.hpp
     Tokeniser.hpp Tokeniser.cpp
     Parser.hpp Parser.cpp
     Generator.hpp Generator.cpp

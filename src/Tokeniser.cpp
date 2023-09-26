@@ -22,17 +22,17 @@ Result<TokenVector> Tokeniser::tokenise()
             // Check if it's a key word
             if (buf.str() == "return")
             {
-                tokens.push_back({ .token = TokenType::return_ });
+                tokens.push_back({ .token = TokenType::Return });
                 buf.str("");
             }
             else if (buf.str() == "let")
             {
-                tokens.push_back({ .token = TokenType::let });
+                tokens.push_back({ .token = TokenType::Let });
                 buf.str("");
             }
             else
             {
-                tokens.push_back({ .token = TokenType::identifier, .value = buf.str() });
+                tokens.push_back({ .token = TokenType::Identifier, .value = buf.str() });
                 buf.str("");
             }
         }
@@ -42,34 +42,43 @@ Result<TokenVector> Tokeniser::tokenise()
             while (peek().has_value() && std::isdigit(peek().value())) {
                 buf << consume();
             }
-            tokens.push_back({ .token = TokenType::int_lit, .value = buf.str() });
+            tokens.push_back({ .token = TokenType::IntLit, .value = buf.str() });
             buf.str("");
         }
         else if (peek().value() == ';')
         {
             consume();
-            tokens.push_back({ .token = TokenType::expr_end });
+            tokens.push_back({ .token = TokenType::ExprEnd });
         }
         else if (peek().value() == '(')
         {
             consume();
-            tokens.push_back({ .token = TokenType::open_paren });
+            tokens.push_back({ .token = TokenType::OpenParen });
         }
         else if (peek().value() == ')')
         {
             consume();
-            tokens.push_back({ .token = TokenType::close_paren });
+            tokens.push_back({ .token = TokenType::CloseParen });
         }
         else if (peek().value() == '=')
         {
             consume();
-            tokens.push_back({ .token = TokenType::equals });
+            tokens.push_back({ .token = TokenType::Equals });
+        }
+        else if (peek().value() == '+')
+        {
+            consume();
+            tokens.push_back({ .token = TokenType::Plus });
+        }
+        else if (peek().value() == '*')
+        {
+            consume();
+            tokens.push_back({ .token = TokenType::Asterisk });
         }
         else if (std::isspace(peek().value()))
         {
             // Ignore whitespace
             consume();
-            continue;
         }
     }
     // Reset the position into the source in case tokenise is called twice
