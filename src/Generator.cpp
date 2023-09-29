@@ -51,6 +51,16 @@ void Generator::generateTerm(const Node::Term *term)
     std::visit(termVisitor, term->expr);
 }
 
+void Generator::generateScope(const Node::Scope *scope)
+{
+    beginScope();
+    for (const auto* stmt : scope->statements)
+    {
+        generateStatement(stmt);
+    }
+    endScope();
+}
+
 std::stringstream &Generator::output()
 {
     return m_outputStream;
@@ -68,7 +78,7 @@ void Generator::pop(const std::string& reg)
     m_stackLocation--;
 }
 
-std::map<std::string, Variable> &Generator::variables()
+std::vector<Variable> &Generator::variables()
 {
     return m_variables;
 }
@@ -82,3 +92,30 @@ ErrorHandler &Generator::errors()
 {
     return m_errorHandler;
 }
+
+void Generator::beginScope()
+{
+    m_scopes.push_back(m_variables.size());
+}
+
+void Generator::endScope()
+{
+    size_t popCount = m_variables.size() - m_scopes.back();
+    // stack grows from the top to adding is popping off!
+    m_outputStream << "\tadd rsp, " << popCount * 8 << "\n";
+    m_stackLocation -= popCount;
+//    m_variables = std::vector<Variable>(m_variables.begin(), m_variables.begin() + popCount);
+    for (auto i = 0; i < popCount; ++i)
+    {
+        m_variables.pop_back();
+    }
+    m_scopes.pop_back();
+}
+
+std::string Generator::createLabel()
+{
+    std::stringstream ss;
+    ss << "label" << m_labelIndex++;
+    return ss.str();
+}
+

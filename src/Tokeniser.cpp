@@ -49,6 +49,7 @@ TokenVector Tokeniser::tokenise()
             if (peek().value() == '\n' || peek().value() == '\r')
             {
                 m_lineNo++;
+                m_posInLine = 0;
             }
             consume();
         }

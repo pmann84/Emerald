@@ -68,9 +68,21 @@ namespace Node {
         Expr* letExpr;
     };
 
+    struct Statement;
+    struct Scope
+    {
+        std::vector<Statement*> statements;
+    };
+
+    struct StatementIf
+    {
+        Expr* expr;
+        Scope* scope;
+    };
+
     struct Statement
     {
-        std::variant<StatementReturn*, StatementLet*> statement;
+        std::variant<StatementReturn*, StatementLet*, Scope*, StatementIf*> statement;
     };
 
     struct Program

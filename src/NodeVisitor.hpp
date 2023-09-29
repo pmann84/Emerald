@@ -15,7 +15,7 @@ public:
 protected:
     Generator& generator() { return m_generator; }
     std::stringstream& output() { return m_generator.output(); }
-    std::map<std::string, Variable>& variables() { return m_generator.variables(); }
+    std::vector<Variable>& variables() { return m_generator.variables(); }
     ErrorHandler& errors() { return m_generator.errors(); }
     size_t stackLocation() { return m_generator.stackLocation(); }
 
@@ -31,7 +31,12 @@ public:
     void operator()(const Node::Identifier* indentExpr)
     {
         std::string identifier = indentExpr->identifier.Value.value();
-        if (!variables().contains(identifier)) {
+        auto it = std::find_if(
+                variables().begin(),
+                variables().end(),
+                [&identifier](const Variable& var) { return var.name == identifier; });
+        if (it == variables().end())
+        {
             std::stringstream errorSs;
             errorSs << "Undeclared variable " << identifier;
             Error error = { .Message = errorSs.str() };
@@ -39,7 +44,7 @@ public:
             return;
         }
 
-        const auto identLocation = variables().at(identifier).stackPosition;
+        const auto identLocation = it->stackPosition;
         const auto offset = generator().stackLocation() - identLocation - 1;
         // This pushes a copy of the item in rsp + offset to the top of the stack.
         // We * 8 here because it's the size in bytes (64bit -> 8, 32bit -> 4)
@@ -127,17 +132,19 @@ public:
     explicit StatementVisitor(Generator& generator): NodeVisitor(generator) {}
     void operator()(const Node::StatementLet* letStatement)
     {
-        if (variables().contains(letStatement->identifier.Value.value()))
+        auto it = std::find_if(
+                variables().begin(),
+                variables().end(),
+                [&letStatement](const Variable& var) { return var.name == letStatement->identifier.Value.value(); });
+//        if (variables().contains(letStatement->identifier.Value.value()))
+        if (it != variables().end())
         {
             std::stringstream errorSs;
             errorSs << "Identifier " << letStatement->identifier.Value.value() << " already used.";
             Error error = { .Message = errorSs.str() };
             errors() << error;
         } else {
-            variables().insert({
-                                       letStatement->identifier.Value.value(),
-                                       Variable{ .stackPosition = generator().stackLocation() }
-                               });
+            variables().push_back({ .name = letStatement->identifier.Value.value(), .stackPosition = generator().stackLocation() });
             generator().generateExpr(letStatement->letExpr); // This inserts the variable onto the stack
         }
     }
@@ -147,5 +154,21 @@ public:
         output() << "\tmov rax, 60\n";
         generator().pop("rdi");
         output() << "\tsyscall\n";
+    }
+    void operator()(const Node::Scope* statementScope)
+    {
+        generator().generateScope(statementScope);
+    }
+    void operator()(const Node::StatementIf* ifStatement)
+    {
+        // Puts the result of the expr on the top of the stack
+        generator().generateExpr(ifStatement->expr);
+        // Pop the top of the stack (the result of the expr above) into rax
+        generator().pop("rax");
+        const auto label = generator().createLabel();
+        output() << "\ttest rax, rax\n";
+        output() << "\tjz " << label << "\n";
+        generator().generateScope(ifStatement->scope);
+        output() << label << ":\n";
     }
 };

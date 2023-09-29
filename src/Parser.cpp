@@ -143,43 +143,66 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
 std::optional<Node::Statement*> Parser::parseStatement()
 {
     auto stmt = m_allocator.alloc<Node::Statement>();
-    if (auto returnToken = tryConsume(TokenType::Return))
-    {
+    if (tryConsume(TokenType::Return)) {
         auto nodeReturn = m_allocator.alloc<Node::StatementReturn>();
-        if (auto nodeExpr = parseExpr())
-        {
+        if (auto nodeExpr = parseExpr()) {
             nodeReturn->returnExpr = nodeExpr.value();
-        }
-        else
-        {
+        } else {
             addError(peek().value().Info.value(), "Invalid expression after return.");
         }
 
         tryConsume(TokenType::ExprEnd, "Expected ; after expression.");
         stmt->statement = nodeReturn;
         return stmt;
-    }
-    else if (
+    } else if (tryConsume(TokenType::Hash)) {
+        // TODO: Comment so consume until the end of the line
+    } else if (
             peek().value().Type == TokenType::Let &&
             peek(1).has_value() && peek(1).value().Type == TokenType::Identifier &&
             peek(2).has_value() && peek(2).value().Type == TokenType::Equals
-    )
-    {
+            ) {
         consume();
         auto letStatement = m_allocator.alloc<Node::StatementLet>();
         letStatement->identifier = consume();
         consume();
-        if (auto expr = parseExpr())
-        {
+        if (auto expr = parseExpr()) {
             letStatement->letExpr = expr.value();
-        }
-        else
-        {
+        } else {
             addError(peek().value().Info.value(), "Invalid expression in variable definition.");
         }
 
         tryConsume(TokenType::ExprEnd, "Expected ; after expression.");
         stmt->statement = letStatement;
+        return stmt;
+    }
+    else if (peek().has_value() && peek().value().Type == TokenType::OpenCurly) {
+        if (auto scope = parseScope()) {
+            stmt->statement = scope.value();
+            return stmt;
+        }
+        else
+        {
+            addError(peek().value().Info.value(), "Invalid scope.");
+        }
+    }
+    else if (auto ifStatement = tryConsume(TokenType::If))
+    {
+        tryConsume(TokenType::OpenParen, "Expected ( after if");
+        auto ifStmt = m_allocator.alloc<Node::StatementIf>();
+        if (auto expr = parseExpr())
+        {
+            ifStmt->expr = expr.value();
+        }
+        tryConsume(TokenType::CloseParen, "Expected ) after if expression");
+        if (auto scope = parseScope())
+        {
+            ifStmt->scope = scope.value();
+        }
+        else
+        {
+            addError(peek().value().Info.value(), "Invalid scope.");
+        }
+        stmt->statement = ifStmt;
         return stmt;
     }
     // Return nothing which indicates an invalid statement
@@ -219,6 +242,23 @@ std::optional<Node::Term*> Parser::parseTerm()
         return term;
     }
     return {};
+}
+
+std::optional<Node::Scope *> Parser::parseScope()
+{
+    if (!tryConsume(TokenType::OpenCurly, "Expected }"))
+    {
+        return {};
+    }
+    auto scope = m_allocator.alloc<Node::Scope>();
+    while (auto stmt = parseStatement()) {
+        scope->statements.push_back(stmt.value());
+    }
+    if (!tryConsume(TokenType::CloseCurly, "Expected }"))
+    {
+        return {};
+    }
+    return scope;
 }
 
 void Parser::addError(TokenInfo info, std::string message)

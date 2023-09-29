@@ -21,7 +21,9 @@ enum class TokenType
     ForwardSlash,
     OpenCurly,
     CloseCurly,
-    Hash
+    Hash,
+    If,
+    For
 };
 
 // Regex to match
@@ -42,6 +44,8 @@ static std::map<char, TokenType> SymbolTokenMap = {
 static std::map<std::string, TokenType> KeywordTokenMap = {
     {"return", TokenType::Return},
     {"let", TokenType::Let},
+    {"if", TokenType::If},
+    {"for", TokenType::For}
 };
 
 inline std::optional<uint8_t> binaryPrecedence(TokenType tokenType)

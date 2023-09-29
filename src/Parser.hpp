@@ -23,9 +23,9 @@ private:
     std::optional<Node::Term*> parseTerm();
     std::optional<Node::Expr*> parseExpr(int minPrecedence = 0);
     std::optional<Node::Statement*> parseStatement();
+    std::optional<Node::Scope*> parseScope();
 
 private:
-    std::vector<std::string> m_errors;
     const std::vector<Token> m_tokens;
     size_t m_tokenPos = 0;
     ArenaAllocator m_allocator;

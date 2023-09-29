@@ -14,7 +14,7 @@ public:
 
     [[nodiscard]] std::string generateProgram();
     std::stringstream& output();
-    std::map<std::string, Variable>& variables();
+    std::vector<Variable>& variables();
     ErrorHandler& errors();
     size_t stackLocation() const;
 
@@ -22,14 +22,21 @@ public:
     void generateExpr(const Node::Expr* expr);
     void generateBinExp(const Node::BinExpr* binExpr);
     void generateTerm(const Node::Term* term);
+    void generateScope(const Node::Scope* scope);
 
     void push(const std::string& reg);
     void pop(const std::string& reg);
+    std::string createLabel();
+
+    void beginScope();
+    void endScope();
 
 private:
     const Node::Program m_root;
     std::stringstream m_outputStream;
     size_t m_stackLocation = 0;
-    std::map<std::string, Variable> m_variables;
+    std::vector<Variable> m_variables;
+    std::vector<size_t> m_scopes;
+    size_t m_labelIndex = 0;
     ErrorHandler& m_errorHandler;
 };

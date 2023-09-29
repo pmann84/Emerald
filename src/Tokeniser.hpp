@@ -24,6 +24,6 @@ private:
     const std::string m_src;
     size_t m_srcPos = 0;
     size_t m_posInLine = 0;
-    size_t m_lineNo = 1;
+    size_t m_lineNo = 0;
     ErrorHandler& m_errorHandler;
 };
