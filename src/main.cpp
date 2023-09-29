@@ -3,21 +3,12 @@
 #include "Generator.hpp"
 #include "Assembler.hpp"
 #include "Linker.hpp"
+#include "CompilerError.hpp"
 
 #include <argparse.h>
 
 #include <iostream>
 #include <fstream>
-
-void handleErrors(const std::vector<std::string>& errors)
-{
-    std::cerr << "Failed to compile Emerald source!" << std::endl;
-    for (auto& error : errors)
-    {
-        std::cerr << "Error: " << error << std::endl;
-    }
-    exit(1);
-}
 
 int main(int argc, char** argv)
 {
@@ -50,47 +41,30 @@ int main(int argc, char** argv)
         }
     }
 
-    // Initialise a compile result
-    Result<int> compileResult = { .result = 0, .success = true, .errors = {}};
+    // Initialise an error handler to accumulate
+    // and errors
+    ErrorHandler errorHandler;
 
     // Lexing
-    Tokeniser tokeniser(std::move(srcStr));
-    auto tokeniseResult = tokeniser.tokenise();
-    if (!tokeniseResult.success) {
-        compileResult.errors.insert(
-            compileResult.errors.end(),
-            tokeniseResult.errors.begin(),
-            tokeniseResult.errors.end()
-        );
-    }
+    Tokeniser tokeniser(std::move(srcStr), errorHandler);
+    auto tokens = tokeniser.tokenise();
 
     // Parsing
-    Parser parser(std::move(tokeniseResult.result));
+    Parser parser(std::move(tokens), errorHandler);
     const auto ast = parser.parse();
 
-    if (!ast.success)
-    {
-        compileResult.errors.insert(
-                compileResult.errors.end(),
-                ast.errors.begin(),
-                ast.errors.end()
-        );
-        handleErrors(compileResult.errors);
-    }
-
     // Generation
-    Generator generator(ast.result);
+    Generator generator(ast, errorHandler);
     const auto generatedAsm = generator.generateProgram();
 
-    if (!generatedAsm.success)
+    if (errorHandler.hasErrored())
     {
-        compileResult.errors.insert(compileResult.errors.end(), generatedAsm.errors.begin(), generatedAsm.errors.end());
-        handleErrors(compileResult.errors);
+        for(const auto& error : errorHandler)
+        {
+            std::cerr << error << std::endl;
+        }
     }
-
-    compileResult.success = compileResult.errors.empty();
-
-    if (compileResult.success)
+    else
     {
         // Construct output name
         std::string outName = "out";
@@ -98,15 +72,11 @@ int main(int argc, char** argv)
 
         // Generate assembly
         Assembler assembler(outName);
-        assembler.generate(generatedAsm.result);
+        assembler.generate(generatedAsm);
 
         // Link
         Linker linker(outName);
         linker.link();
-    }
-    else
-    {
-        handleErrors(compileResult.errors);
     }
     return 0;
 }

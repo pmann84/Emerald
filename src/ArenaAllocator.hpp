@@ -21,6 +21,7 @@ public:
     inline T* alloc()
     {
         void* offset = m_offset;
+//        std::cout << "Allocating " << sizeof(T) << " bytes." << std::endl;
         m_offset += sizeof(T);
         return static_cast<T*>(offset);
     }

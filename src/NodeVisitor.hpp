@@ -15,8 +15,8 @@ public:
 protected:
     Generator& generator() { return m_generator; }
     std::stringstream& output() { return m_generator.output(); }
-    std::unordered_map<std::string, Variable>& variables() { return m_generator.variables(); }
-    std::vector<std::string>& errors() { return m_generator.errors(); }
+    std::map<std::string, Variable>& variables() { return m_generator.variables(); }
+    ErrorHandler& errors() { return m_generator.errors(); }
     size_t stackLocation() { return m_generator.stackLocation(); }
 
 private:
@@ -30,11 +30,12 @@ public:
 
     void operator()(const Node::Identifier* indentExpr)
     {
-        std::string identifier = indentExpr->identifier.value.value();
+        std::string identifier = indentExpr->identifier.Value.value();
         if (!variables().contains(identifier)) {
             std::stringstream errorSs;
             errorSs << "Undeclared variable " << identifier;
-            errors().push_back(errorSs.str());
+            Error error = { .Message = errorSs.str() };
+            errors() << error;
             return;
         }
 
@@ -47,7 +48,7 @@ public:
     }
     void operator()(const Node::IntLiteral* intLitExpr)
     {
-        output() << "\tmov rax, " << intLitExpr->intLit.value.value() << "\n";
+        output() << "\tmov rax, " << intLitExpr->intLit.Value.value() << "\n";
         generator().push("rax");
     }
     void operator()(const Node::TermParen* parenTerm)
@@ -126,14 +127,15 @@ public:
     explicit StatementVisitor(Generator& generator): NodeVisitor(generator) {}
     void operator()(const Node::StatementLet* letStatement)
     {
-        if (variables().contains(letStatement->identifier.value.value()))
+        if (variables().contains(letStatement->identifier.Value.value()))
         {
             std::stringstream errorSs;
-            errorSs << "Identifier " << letStatement->identifier.value.value() << " already used.";
-            errors().push_back(errorSs.str());
+            errorSs << "Identifier " << letStatement->identifier.Value.value() << " already used.";
+            Error error = { .Message = errorSs.str() };
+            errors() << error;
         } else {
             variables().insert({
-                                       letStatement->identifier.value.value(),
+                                       letStatement->identifier.Value.value(),
                                        Variable{ .stackPosition = generator().stackLocation() }
                                });
             generator().generateExpr(letStatement->letExpr); // This inserts the variable onto the stack

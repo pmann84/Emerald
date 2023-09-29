@@ -5,17 +5,17 @@
 #include "Nodes.hpp"
 
 #include <sstream>
-#include <unordered_map>
+#include <map>
 
 class Generator
 {
 public:
-    explicit Generator(Node::Program root);
+    explicit Generator(Node::Program root, ErrorHandler& errorHandler);
 
-    [[nodiscard]] Result<std::string> generateProgram();
+    [[nodiscard]] std::string generateProgram();
     std::stringstream& output();
-    std::unordered_map<std::string, Variable>& variables();
-    std::vector<std::string>& errors();
+    std::map<std::string, Variable>& variables();
+    ErrorHandler& errors();
     size_t stackLocation() const;
 
     void generateStatement(const Node::Statement* statement);
@@ -30,6 +30,6 @@ private:
     const Node::Program m_root;
     std::stringstream m_outputStream;
     size_t m_stackLocation = 0;
-    std::unordered_map<std::string, Variable> m_variables;
-    std::vector<std::string> m_errors;
+    std::map<std::string, Variable> m_variables;
+    ErrorHandler& m_errorHandler;
 };

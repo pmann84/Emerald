@@ -3,6 +3,7 @@
 #include <optional>
 #include <string>
 #include <map>
+#include <vector>
 
 enum class TokenType
 {
@@ -17,7 +18,10 @@ enum class TokenType
     Plus,
     Asterisk,
     Minus,
-    ForwardSlash
+    ForwardSlash,
+    OpenCurly,
+    CloseCurly,
+    Hash
 };
 
 // Regex to match
@@ -30,6 +34,9 @@ static std::map<char, TokenType> SymbolTokenMap = {
     {'*', TokenType::Asterisk},
     {'-', TokenType::Minus},
     {'/', TokenType::ForwardSlash},
+    {'{', TokenType::OpenCurly},
+    {'}', TokenType::CloseCurly},
+    {'#', TokenType::Hash}
 };
 
 static std::map<std::string, TokenType> KeywordTokenMap = {
@@ -52,10 +59,18 @@ inline std::optional<uint8_t> binaryPrecedence(TokenType tokenType)
     }
 }
 
+struct TokenInfo
+{
+    std::string File;
+    size_t Line;
+    size_t Pos;
+};
+
 struct Token
 {
-    TokenType token;
-    std::optional<std::string> value;
+    TokenType Type;
+    std::optional<TokenInfo> Info;
+    std::optional<std::string> Value;
 };
 
 using TokenVector = std::vector<Token>;

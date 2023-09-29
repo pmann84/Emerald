@@ -2,11 +2,14 @@
 #include "Parser.hpp"
 #include "Nodes.hpp"
 
-Parser::Parser(std::vector<Token> tokens) : m_tokens(std::move(tokens)), m_allocator(1024 * 1024 * 4)
+Parser::Parser(std::vector<Token> tokens, ErrorHandler& errorHandler) :
+    m_tokens(std::move(tokens)),
+    m_allocator(1024 * 1024 * 4),
+    m_errorHandler(errorHandler)
 {
 }
 
-std::optional<Token> Parser::peek(size_t offset) const
+std::optional<Token> Parser::peek(int64_t offset) const
 {
     if (m_tokenPos + offset >= m_tokens.size())
     {
@@ -22,7 +25,7 @@ Token Parser::consume()
 
 std::optional<Token> Parser::tryConsume(TokenType tType)
 {
-    if (peek().has_value() && peek().value().token == tType)
+    if (peek().has_value() && peek().value().Type == tType)
     {
         return consume();
     }
@@ -34,12 +37,12 @@ std::optional<Token> Parser::tryConsume(TokenType tType, const std::string& erro
     auto token = tryConsume(tType);
     if (!token.has_value())
     {
-        addError(error);
+        addError(peek(-1).value().Info.value(), error);
     }
     return token;
 }
 
-Result<Node::Program> Parser::parse()
+Node::Program Parser::parse()
 {
     Node::Program program;
     while (peek().has_value())
@@ -50,12 +53,12 @@ Result<Node::Program> Parser::parse()
         }
         else
         {
-            addError("Invalid statement!");
+            addError(peek().value().Info.value(), "Invalid statement.");
         }
     }
 
     m_tokenPos = 0;
-    return { .result = program, .success = m_errors.empty(), .errors = m_errors };
+    return program;
 }
 
 std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
@@ -75,7 +78,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
         std::optional<uint8_t> precedence;
         if (currentToken.has_value())
         {
-            precedence = binaryPrecedence(currentToken->token);
+            precedence = binaryPrecedence(currentToken->Type);
             if (!precedence.has_value() || precedence.value() < minPrecedence) {
                 break;
             }
@@ -89,13 +92,13 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
         auto exprRhs = parseExpr(nextMinPrecedence);
         if (!exprRhs.has_value())
         {
-            addError("Unable to parse expression");
+            addError(peek().value().Info.value(), "Unable to parse expression");
         }
         else
         {
             auto expr = m_allocator.alloc<Node::BinExpr>();
             auto nodeLhsExpr = m_allocator.alloc<Node::Expr>();
-            if (op.token == TokenType::Plus)
+            if (op.Type == TokenType::Plus)
             {
                 auto addNode = m_allocator.alloc<Node::BinExprAdd>();
                 nodeLhsExpr->expr = exprLhs->expr;
@@ -103,7 +106,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
                 addNode->rhs = exprRhs.value();
                 expr->expr = addNode;
             }
-            else if (op.token == TokenType::Asterisk)
+            else if (op.Type == TokenType::Asterisk)
             {
                 auto multNode = m_allocator.alloc<Node::BinExprMult>();
                 nodeLhsExpr->expr = exprLhs->expr;
@@ -111,7 +114,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
                 multNode->rhs = exprRhs.value();
                 expr->expr = multNode;
             }
-            else if (op.token == TokenType::Minus)
+            else if (op.Type == TokenType::Minus)
             {
                 auto minusNode = m_allocator.alloc<Node::BinExprMinus>();
                 nodeLhsExpr->expr = exprLhs->expr;
@@ -119,7 +122,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
                 minusNode->rhs = exprRhs.value();
                 expr->expr = minusNode;
             }
-            else if (op.token == TokenType::ForwardSlash)
+            else if (op.Type == TokenType::ForwardSlash)
             {
                 auto divNode = m_allocator.alloc<Node::BinExprDiv>();
                 nodeLhsExpr->expr = exprLhs->expr;
@@ -140,7 +143,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
 std::optional<Node::Statement*> Parser::parseStatement()
 {
     auto stmt = m_allocator.alloc<Node::Statement>();
-    if (tryConsume(TokenType::Return))
+    if (auto returnToken = tryConsume(TokenType::Return))
     {
         auto nodeReturn = m_allocator.alloc<Node::StatementReturn>();
         if (auto nodeExpr = parseExpr())
@@ -149,7 +152,7 @@ std::optional<Node::Statement*> Parser::parseStatement()
         }
         else
         {
-            addError("Invalid expression after return.");
+            addError(peek().value().Info.value(), "Invalid expression after return.");
         }
 
         tryConsume(TokenType::ExprEnd, "Expected ; after expression.");
@@ -157,9 +160,9 @@ std::optional<Node::Statement*> Parser::parseStatement()
         return stmt;
     }
     else if (
-            peek().value().token == TokenType::Let &&
-            peek(1).has_value() && peek(1).value().token == TokenType::Identifier &&
-            peek(2).has_value() && peek(2).value().token == TokenType::Equals
+            peek().value().Type == TokenType::Let &&
+            peek(1).has_value() && peek(1).value().Type == TokenType::Identifier &&
+            peek(2).has_value() && peek(2).value().Type == TokenType::Equals
     )
     {
         consume();
@@ -172,17 +175,14 @@ std::optional<Node::Statement*> Parser::parseStatement()
         }
         else
         {
-            addError("Invalid expression in variable definition.");
+            addError(peek().value().Info.value(), "Invalid expression in variable definition.");
         }
 
         tryConsume(TokenType::ExprEnd, "Expected ; after expression.");
         stmt->statement = letStatement;
         return stmt;
     }
-    else
-    {
-        addError("Unable to find valid statement.");
-    }
+    // Return nothing which indicates an invalid statement
     return {};
 }
 
@@ -209,7 +209,7 @@ std::optional<Node::Term*> Parser::parseTerm()
         auto expr = parseExpr();
         if (!expr.has_value())
         {
-            addError("Expected expression after open parenthesis.");
+            addError(peek(-1).value().Info.value(), "Expected expression after open parenthesis.");
         }
         tryConsume(TokenType::CloseParen, "Expected close parenthesis.");
         auto termParen = m_allocator.alloc<Node::TermParen>();
@@ -221,8 +221,9 @@ std::optional<Node::Term*> Parser::parseTerm()
     return {};
 }
 
-void Parser::addError(const std::string &message)
+void Parser::addError(TokenInfo info, std::string message)
 {
     consume();
-    m_errors.emplace_back(message);
+    Error error = { .Info = info, .Message = std::move(message) };
+    m_errorHandler << error;
 }

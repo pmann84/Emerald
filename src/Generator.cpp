@@ -3,12 +3,12 @@
 
 #include <sstream>
 
-Generator::Generator(Node::Program root) : m_root(std::move(root))
+Generator::Generator(Node::Program root, ErrorHandler& errorHandler) : m_root(std::move(root)), m_errorHandler(errorHandler)
 {
 
 }
 
-Result<std::string> Generator::generateProgram()
+std::string Generator::generateProgram()
 {
     output() <<"global _start\n\n_start:\n";
 
@@ -24,7 +24,7 @@ Result<std::string> Generator::generateProgram()
         output() << "\tmov rdi, 0\n";
         output() << "\tsyscall\n";
     }
-    return { .result = output().str(), .success=m_errors.empty(), .errors=m_errors };
+    return output().str();
 }
 
 void Generator::generateStatement(const Node::Statement* statement)
@@ -68,17 +68,17 @@ void Generator::pop(const std::string& reg)
     m_stackLocation--;
 }
 
-std::unordered_map<std::string, Variable> &Generator::variables()
+std::map<std::string, Variable> &Generator::variables()
 {
     return m_variables;
-}
-
-std::vector<std::string> &Generator::errors()
-{
-    return m_errors;
 }
 
 size_t Generator::stackLocation() const
 {
     return m_stackLocation;
+}
+
+ErrorHandler &Generator::errors()
+{
+    return m_errorHandler;
 }
