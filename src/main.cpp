@@ -1,9 +1,9 @@
-#include "Tokeniser.hpp"
+#include "../lib/Tokeniser.hpp"
 #include "Parser.hpp"
 #include "Generator.hpp"
 #include "Assembler.hpp"
 #include "Linker.hpp"
-#include "CompilerError.hpp"
+#include "../lib/CompilerError.hpp"
 
 #include <argparse.h>
 
@@ -46,7 +46,7 @@ int main(int argc, char** argv)
     ErrorHandler errorHandler;
 
     // Lexing
-    Tokeniser tokeniser(std::move(srcStr), errorHandler);
+    Tokeniser tokeniser(std::move(srcStr), srcFilePath, errorHandler);
     auto tokens = tokeniser.tokenise();
 
     // Parsing

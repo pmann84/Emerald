@@ -1,5 +1,9 @@
 let x = (10 - 2 * 3) / 2;
-let x2 = 0;
+let x2 = 0; # I can comment stuff here
+{
+    let x2 = 20;
+}
+# Or I can add a comment here...
 if (x2) {
     return 69;
 }

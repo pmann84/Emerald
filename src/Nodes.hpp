@@ -1,8 +1,9 @@
 #pragma once
 
+#include <Token.hpp>
+
 #include <variant>
 #include <vector>
-#include "Tokens.hpp"
 
 namespace Node {
     struct IntLiteral

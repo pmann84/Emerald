@@ -11,5 +11,12 @@ project(
 # CMake scripts
 include(cmake/project_defaults.cmake) # Default project settings
 
+option(PROJECTEMERALD_ENABLE_TESTS "Set to ON to enable the PROJECTEMERALD tests" OFF)
+
 add_subdirectory(vendor)
+add_subdirectory(lib)
 add_subdirectory(src)
+
+if (PROJECTEMERALD_ENABLE_TESTS)
+    add_subdirectory(tests)
+endif ()

@@ -15,6 +15,7 @@ public:
     [[nodiscard]] std::string generateProgram();
     std::stringstream& output();
     std::vector<Variable>& variables();
+    std::vector<size_t>& scopes();
     ErrorHandler& errors();
     size_t stackLocation() const;
 

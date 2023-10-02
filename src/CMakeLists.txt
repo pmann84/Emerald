@@ -4,19 +4,21 @@ add_executable(${PROJECT_NAME})
 
 target_sources(${PROJECT_NAME} PRIVATE
     main.cpp
-    Result.hpp
     NodeVisitor.hpp
     Variable.hpp
-    CompilerError.hpp
     ArenaAllocator.hpp
-    Tokens.hpp
     Nodes.hpp
-    Tokeniser.hpp Tokeniser.cpp
     Parser.hpp Parser.cpp
     Generator.hpp Generator.cpp
     Assembler.hpp Assembler.cpp
     Linker.hpp Linker.cpp
 )
 
+target_link_libraries(${PROJECT_NAME}
+        PUBLIC EmeraldLib
+)
+
+get_target_property(EmeraldLib_INCLUDES EmeraldLib INCLUDE_DIRECTORIES)
 target_include_directories(${PROJECT_NAME}
-        PUBLIC ${CPPARGPARSE_INCLUDE_DIRS})
+        PRIVATE ${EmeraldLib_INCLUDES}
+        PRIVATE ${CPPARGPARSE_INCLUDE_DIRS})

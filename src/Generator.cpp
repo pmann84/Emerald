@@ -83,6 +83,11 @@ std::vector<Variable> &Generator::variables()
     return m_variables;
 }
 
+std::vector<size_t> &Generator::scopes()
+{
+    return m_scopes;
+}
+
 size_t Generator::stackLocation() const
 {
     return m_stackLocation;

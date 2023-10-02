@@ -17,6 +17,7 @@ protected:
     std::stringstream& output() { return m_generator.output(); }
     std::vector<Variable>& variables() { return m_generator.variables(); }
     ErrorHandler& errors() { return m_generator.errors(); }
+    std::vector<size_t>& scopes() { return m_generator.scopes(); }
     size_t stackLocation() { return m_generator.stackLocation(); }
 
 private:
@@ -30,7 +31,7 @@ public:
 
     void operator()(const Node::Identifier* indentExpr)
     {
-        std::string identifier = indentExpr->identifier.Value.value();
+        std::string identifier = indentExpr->identifier.value().value();
         auto it = std::find_if(
                 variables().begin(),
                 variables().end(),
@@ -39,7 +40,7 @@ public:
         {
             std::stringstream errorSs;
             errorSs << "Undeclared variable " << identifier;
-            Error error = { .Message = errorSs.str() };
+            const auto error = makeError({}, errorSs.str());
             errors() << error;
             return;
         }
@@ -53,7 +54,7 @@ public:
     }
     void operator()(const Node::IntLiteral* intLitExpr)
     {
-        output() << "\tmov rax, " << intLitExpr->intLit.Value.value() << "\n";
+        output() << "\tmov rax, " << intLitExpr->intLit.value().value() << "\n";
         generator().push("rax");
     }
     void operator()(const Node::TermParen* parenTerm)
@@ -105,7 +106,7 @@ public:
     void operator()(const Node::BinExprMinus* minus)
     {
         // This pushes both onto the stop of the stack
-        // Need to do RHS first otherwise we are minusing in the wrong order (associativity and all that)
+        // Need to do RHS first otherwise we are minus-ing in the wrong order (associativity and all that)
         generator().generateExpr(minus->rhs);
         generator().generateExpr(minus->lhs);
         generator().pop("rax");
@@ -132,19 +133,29 @@ public:
     explicit StatementVisitor(Generator& generator): NodeVisitor(generator) {}
     void operator()(const Node::StatementLet* letStatement)
     {
+        size_t offset = 0;
+        const auto ss = scopes();
+        if (scopes().size() > 0)
+        {
+            offset = scopes().back();
+            if (offset < 0 || offset > variables().size())
+            {
+                offset = 0;
+            }
+        }
         auto it = std::find_if(
-                variables().begin(),
+                variables().begin() + offset,
                 variables().end(),
-                [&letStatement](const Variable& var) { return var.name == letStatement->identifier.Value.value(); });
+                [&letStatement](const Variable& var) { return var.name == letStatement->identifier.value().value(); });
 //        if (variables().contains(letStatement->identifier.Value.value()))
         if (it != variables().end())
         {
             std::stringstream errorSs;
-            errorSs << "Identifier " << letStatement->identifier.Value.value() << " already used.";
-            Error error = { .Message = errorSs.str() };
+            errorSs << "Identifier " << letStatement->identifier.value().value() << " already used.";
+            const auto error = makeError({}, errorSs.str());
             errors() << error;
         } else {
-            variables().push_back({ .name = letStatement->identifier.Value.value(), .stackPosition = generator().stackLocation() });
+            variables().push_back({ .name = letStatement->identifier.value().value(), .stackPosition = generator().stackLocation() });
             generator().generateExpr(letStatement->letExpr); // This inserts the variable onto the stack
         }
     }

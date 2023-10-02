@@ -1,7 +1,7 @@
 #pragma once
 
 #include <variant>
-#include "Tokeniser.hpp"
+#include "../lib/Tokeniser.hpp"
 #include "ArenaAllocator.hpp"
 #include "Nodes.hpp"
 
@@ -15,10 +15,10 @@ public:
 private:
     [[nodiscard]] std::optional<Token> peek(int64_t offset = 0) const;
     Token consume();
-    std::optional<Token> tryConsume(TokenType tType, const std::string& error);
-    std::optional<Token> tryConsume(TokenType tType);
+    std::optional<Token> tryConsume(Token::Kind tType, const std::string& error);
+    std::optional<Token> tryConsume(Token::Kind tType);
 
-    void addError(TokenInfo info, std::string message);
+    void addError(Token::Info info, std::string message);
 
     std::optional<Node::Term*> parseTerm();
     std::optional<Node::Expr*> parseExpr(int minPrecedence = 0);

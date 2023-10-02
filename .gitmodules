@@ -1,3 +1,6 @@
 [submodule "vendor/cppargparse"]
 	path = vendor/cppargparse
 	url = https://github.com/pmann84/cppargparse.git
+[submodule "vendor/googletest"]
+	path = vendor/googletest
+	url = https://github.com/google/googletest.git

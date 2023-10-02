@@ -5,7 +5,8 @@ $$
     \text{return} \; [\text{Expr}]; \\
     \text{let}\space\text{identifier} = [\text{Expr}]; \\
     [\text{Scope}] \\
-    \text{if} ([\text{Expr}]) \space [\text{Scope}]
+    \text{if} ([\text{Expr}]) \space [\text{Scope}] \\
+    \# \text{comment}
 \end{cases}\\
 [\text{Scope}] &\to \begin{cases}
     \{[\text{Stmt}]^*\}
