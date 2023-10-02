@@ -63,6 +63,7 @@ TokenVector Tokeniser::tokenise()
 
         if (std::isalpha(peek().value()))
         {
+            const auto infoAtStart = getCurrentTokenInfo();
             buf << consume();
             while (peek().has_value() && std::isalnum(peek().value())) {
                 buf << consume();
@@ -72,12 +73,12 @@ TokenVector Tokeniser::tokenise()
             if(KeywordTokenMap.contains(buf.str()))
             {
                 auto keywordToken = KeywordTokenMap.at(buf.str());
-                tokens.push_back(makeToken(keywordToken, getCurrentTokenInfo()));
+                tokens.push_back(makeToken(keywordToken, infoAtStart));
                 buf.str("");
             }
             else
             {
-                tokens.push_back(makeToken(Token::Kind::Identifier, getCurrentTokenInfo(), buf.str()));
+                tokens.push_back(makeToken(Token::Kind::Identifier, infoAtStart, buf.str()));
                 buf.str("");
             }
         }
@@ -139,7 +140,7 @@ char Tokeniser::consume()
 
 Token::Info Tokeniser::getCurrentTokenInfo() const
 {
-    Token::Info info = { .File = m_filename, .Line = m_lineNo, .Pos = m_posInLine - 1 };
+    Token::Info info = { .File = m_filename, .Line = m_lineNo, .Pos = m_posInLine };
     return info;
 }
 

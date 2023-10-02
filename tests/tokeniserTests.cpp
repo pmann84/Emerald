@@ -64,3 +64,36 @@ TEST(TokeniserTests, TestCommentOnLine)
     EXPECT_EQ(tokens[3].value(), "10");
     EXPECT_EQ(tokens[5].value(), "this is a comment");
 }
+
+TEST(TokeniserTests, TestTokenInfoIsCorrect)
+{
+    std::string testFilename = "test.emd";
+    ErrorHandler handler;
+    const std::string source = "let x = 10;";
+    Tokeniser tokeniser(source, testFilename, handler);
+
+    const auto tokens = tokeniser.tokenise();
+    // Check number of tokens
+    EXPECT_EQ(tokens.size(), 5);
+
+    // Check token info
+    EXPECT_EQ(tokens[0].info().value().File, testFilename);
+    EXPECT_EQ(tokens[0].info().value().Line, 1);
+    EXPECT_EQ(tokens[0].info().value().Pos, 1);
+
+    EXPECT_EQ(tokens[1].info().value().File, testFilename);
+    EXPECT_EQ(tokens[1].info().value().Line, 1);
+    EXPECT_EQ(tokens[1].info().value().Pos, 5);
+
+    EXPECT_EQ(tokens[2].info().value().File, testFilename);
+    EXPECT_EQ(tokens[2].info().value().Line, 1);
+    EXPECT_EQ(tokens[2].info().value().Pos, 7);
+
+    EXPECT_EQ(tokens[3].info().value().File, testFilename);
+    EXPECT_EQ(tokens[3].info().value().Line, 1);
+    EXPECT_EQ(tokens[3].info().value().Pos, 9);
+
+    EXPECT_EQ(tokens[4].info().value().File, testFilename);
+    EXPECT_EQ(tokens[4].info().value().Line, 1);
+    EXPECT_EQ(tokens[4].info().value().Pos, 11);
+}
