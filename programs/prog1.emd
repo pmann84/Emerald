@@ -1,7 +1,7 @@
 let x = (10 - 2 * 3) / 2;
 let x2 = 0; # I can comment stuff here
 {
-    let x2 = 20;
+    let x3 = 20;
 }
 # Or I can add a comment here...
 if (x2) {
