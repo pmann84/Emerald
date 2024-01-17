@@ -27,6 +27,7 @@ public:
 
     void push(const std::string& reg);
     void pop(const std::string& reg);
+    void move(const std::string& dest, const std::string& src);
     std::string createLabel();
 
     void beginScope();

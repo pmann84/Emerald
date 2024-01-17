@@ -163,11 +163,11 @@ std::optional<Node::Statement*> Parser::parseStatement()
             peek().has_value() && peek().value().kind() == Token::Kind::Let &&
             peek(1).has_value() && peek(1).value().kind() == Token::Kind::Identifier &&
             peek(2).has_value() && peek(2).value().kind() == Token::Kind::Equals
-            ) {
+    ) {
         consume();
         auto letStatement = m_allocator.alloc<Node::StatementLet>();
         letStatement->identifier = consume();
-        consume();
+        consume(); // consume equals
         if (auto expr = parseExpr()) {
             letStatement->letExpr = expr.value();
         } else {
@@ -177,8 +177,23 @@ std::optional<Node::Statement*> Parser::parseStatement()
         tryConsume(Token::Kind::SemiColon, "Expected ; after expression.");
         stmt->statement = letStatement;
         return stmt;
-    }
-    else if (peek().has_value() && peek().value().kind() == Token::Kind::OpenCurly) {
+    } else if(
+            peek().has_value() && peek().value().kind() == Token::Kind::Identifier &&
+            peek(1).has_value() && peek(1).value().kind() == Token::Kind::Equals
+    ) {
+        auto assignStatement = m_allocator.alloc<Node::StatementAssign>();
+        assignStatement->identifier = consume();
+        consume(); // consume equals
+        if (auto expr = parseExpr()) {
+            assignStatement->assignExpr = expr.value();
+        } else {
+            addError(peek().value().info().value(), "Invalid expression in variable assignment.");
+        }
+
+        tryConsume(Token::Kind::SemiColon, "Expected ; after expression.");
+        stmt->statement = assignStatement;
+        return stmt;
+    } else if (peek().has_value() && peek().value().kind() == Token::Kind::OpenCurly) {
         if (auto scope = parseScope()) {
             stmt->statement = scope.value();
             return stmt;

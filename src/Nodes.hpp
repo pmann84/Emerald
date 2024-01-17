@@ -69,6 +69,12 @@ namespace Node {
         Expr* letExpr;
     };
 
+    struct StatementAssign
+    {
+        Token identifier;
+        Expr* assignExpr;
+    };
+
     struct Statement;
     struct Scope
     {
@@ -83,7 +89,7 @@ namespace Node {
 
     struct Statement
     {
-        std::variant<StatementReturn*, StatementLet*, Scope*, StatementIf*> statement;
+        std::variant<StatementReturn*, StatementLet*, Scope*, StatementIf*, StatementAssign*> statement;
     };
 
     struct Program

@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <cassert>
+#include <ranges>
 #include "Nodes.hpp"
 
 class Generator;
@@ -152,11 +153,31 @@ public:
         {
             std::stringstream errorSs;
             errorSs << "Identifier " << letStatement->identifier.value().value() << " already used.";
-            const auto error = makeError({}, errorSs.str());
+            const auto error = makeError(letStatement->identifier.info().value(), errorSs.str());
             errors() << error;
         } else {
             variables().push_back({ .name = letStatement->identifier.value().value(), .stackPosition = generator().stackLocation() });
             generator().generateExpr(letStatement->letExpr); // This inserts the variable onto the stack
+        }
+    }
+    void operator()(const Node::StatementAssign* assignStatement) {
+        const auto it = std::ranges::find_if(
+                variables(),
+                [&assignStatement](const Variable& var) {
+                    return var.name == assignStatement->identifier.value().value();
+                });
+        if (it == variables().end()) {
+            std::stringstream errorSs;
+            errorSs << "Undeclared identifier " << assignStatement->identifier.value().value() << ".";
+            const auto error = makeError(assignStatement->identifier.info().value(), errorSs.str());
+            errors() << error;
+        } else {
+            generator().generateExpr(assignStatement->assignExpr); // This evaluates the expression and inserts the variable onto the stack
+            generator().pop("rax");
+
+            const auto identLocation = it->stackPosition;
+            const auto offset = generator().stackLocation() - identLocation - 1;
+            generator().move("[rsp + " + std::to_string(offset * 8) + "]", "rax");
         }
     }
     void operator()(const Node::StatementReturn* returnStatement)

@@ -22,7 +22,7 @@ Emerald <path/to/emd file> -out test
 ```
 here the argument passed to `-out` will be the name of the executable. You can then run your program with the command 
 ```bash
-./test && echo $?
+./test; echo $?
 ```
 which will also print out the error code.
 

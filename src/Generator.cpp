@@ -79,6 +79,10 @@ void Generator::pop(const std::string& reg)
     m_stackLocation--;
 }
 
+void Generator::move(const std::string& dest, const std::string& src) {
+    output() << "\tmov " << dest << ", " << src << "\n";
+}
+
 std::vector<Variable> &Generator::variables()
 {
     return m_variables;
