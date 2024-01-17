@@ -53,12 +53,13 @@ void Generator::generateTerm(const Node::Term *term)
 
 void Generator::generateScope(const Node::Scope *scope)
 {
-    beginScope();
-    for (const auto* stmt : scope->statements)
-    {
-        generateStatement(stmt);
+    if (scope) {
+        beginScope();
+        for (const auto *stmt: scope->statements) {
+            generateStatement(stmt);
+        }
+        endScope();
     }
-    endScope();
 }
 
 std::stringstream &Generator::output()

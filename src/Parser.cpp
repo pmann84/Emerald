@@ -20,7 +20,10 @@ std::optional<Token> Parser::peek(int64_t offset) const
 
 Token Parser::consume()
 {
-    return m_tokens.at(m_tokenPos++);
+    if (m_tokenPos < m_tokens.size()) {
+        return m_tokens.at(m_tokenPos++);
+    }
+    return Token(Token::Kind::Unexpected, {}, {});
 }
 
 std::optional<Token> Parser::tryConsume(Token::Kind tType)
@@ -37,7 +40,10 @@ std::optional<Token> Parser::tryConsume(Token::Kind tType, const std::string& er
     auto token = tryConsume(tType);
     if (!token.has_value())
     {
-        addError(peek(-1).value().info().value(), error);
+        if (peek(-1).has_value()) {
+            addError(peek(-1).value().info().value(), error);
+        }
+
     }
     return token;
 }
@@ -154,7 +160,7 @@ std::optional<Node::Statement*> Parser::parseStatement()
         stmt->statement = nodeReturn;
         return stmt;
     } else if (
-            peek().value().kind() == Token::Kind::Let &&
+            peek().has_value() && peek().value().kind() == Token::Kind::Let &&
             peek(1).has_value() && peek(1).value().kind() == Token::Kind::Identifier &&
             peek(2).has_value() && peek(2).value().kind() == Token::Kind::Equals
             ) {
@@ -197,7 +203,9 @@ std::optional<Node::Statement*> Parser::parseStatement()
         }
         else
         {
-            addError(peek().value().info().value(), "Invalid scope.");
+            if (peek().has_value()) {
+                addError(peek().value().info().value(), "Invalid scope.");
+            }
         }
         stmt->statement = ifStmt;
         return stmt;
