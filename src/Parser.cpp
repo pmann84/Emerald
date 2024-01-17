@@ -53,7 +53,7 @@ Node::Program Parser::parse()
     Node::Program program;
     while (peek().has_value())
     {
-        if (!tryConsume(Token::Kind::Hash)) {
+        if (!tryConsume(Token::Kind::Comment)) {
             if (auto statement = parseStatement()) {
                 program.statements.push_back(statement.value());
             } else {

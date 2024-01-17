@@ -92,17 +92,31 @@ TokenVector Tokeniser::tokenise()
             tokens.push_back(makeToken(Token::Kind::IntLit, info, buf.str()));
             buf.str("");
         }
-        else if (peek().value() == '#')
-        {
-            // Parse any comments
+        else if (peek().value() == '/' && peek(1).value() == '/') {
+            // Parse any single line comments
             const Token::Info info = getCurrentTokenInfo();
-            buf << consume();
+            buf << consume() << consume();
             while (peek().has_value() && !isNewline()) {
                 buf << consume();
             }
             auto comment = buf.str();
             comment = comment.erase(0, 2);
-            tokens.push_back(makeToken(Token::Kind::Hash, info, comment));
+            tokens.push_back(makeToken(Token::Kind::Comment, info, comment));
+            buf.str("");
+        }
+        else if (peek().value() == '/' && peek(1).value() == '*') {
+            // Parse any multi-line comments
+            const Token::Info info = getCurrentTokenInfo();
+            buf << consume() << consume();
+            // Parse until we hit another */
+            while (peek().has_value() && peek().value() != '*' && peek(1).has_value() && peek(1).value() != '/') {
+                buf << consume();
+            }
+            buf << consume() << consume();
+            auto comment = buf.str();
+            comment = comment.erase(0, 2);
+            comment = comment.erase(comment.size() - 2, 2);
+            tokens.push_back(makeToken(Token::Kind::Comment, info, comment));
             buf.str("");
         }
         else if (SymbolTokenMap.contains(peek().value()))

@@ -44,6 +44,7 @@ public:
         SingleQuote,
         DoubleQuote,
         Pipe,
+        Comment,
         Unexpected
     };
 

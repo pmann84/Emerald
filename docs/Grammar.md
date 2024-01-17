@@ -1,9 +1,11 @@
+# Emerald Grammar
 $$
 \begin{align}
 [\text{Prog}] &\to [\text{Stmt}]^* \\
 [\text{Stmt}] &\to \begin{cases}
     \text{return} \; [\text{Expr}]; \\
     \text{let}\space\text{identifier} = [\text{Expr}]; \\
+    \text{identifier} = [\text{Expr}]; \\
     [\text{Scope}] \\
     \text{if} ([\text{Expr}]) \space [\text{Scope}] \\
 \end{cases}\\
