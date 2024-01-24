@@ -1,17 +1,17 @@
-let x = (10 - 2 * 3) / 2; // 2
-let x2 = 1; // I can comment stuff here - change this to 1 to execute the if(x2) block
+let x = (10 - 2 #* weird intraline comment... *#* 3) / 2; # 2
+let x2 = 1; # I can comment stuff here - change this to 1 to execute the if(x2) block
 {
     let x3 = 20;
 }
-// Or I can add a comment here...
+# Or I can add a comment here...
 if (x2) {
     x = 41 + x2;
     return x;
 }
-/*
+#*
     Here is a multi line comment with
     some interesting info about the code
     that we probably don't need!
-*/
+*#
 let y = x + 5;
 return y;

@@ -29,7 +29,9 @@ std::map<std::string, Token::Kind> Tokeniser::KeywordTokenMap = {
     {"return", Token::Kind::Return},
     {"let", Token::Kind::Let},
     {"if", Token::Kind::If},
-    {"for", Token::Kind::For}
+    {"for", Token::Kind::For},
+    {"else", Token::Kind::Else},
+    {"while", Token::Kind::While}
 };
 
 Tokeniser::Tokeniser(std::string source, std::string filename, ErrorHandler& errorHandler)
@@ -92,32 +94,33 @@ TokenVector Tokeniser::tokenise()
             tokens.push_back(makeToken(Token::Kind::IntLit, info, buf.str()));
             buf.str("");
         }
-        else if (peek().value() == '/' && peek(1).value() == '/') {
-            // Parse any single line comments
-            const Token::Info info = getCurrentTokenInfo();
-            buf << consume() << consume();
-            while (peek().has_value() && !isNewline()) {
-                buf << consume();
+        else if (peek().value() == '#') {
+            if (peek(1).value() == '*') {
+                // Parse any multi-line comments
+                const Token::Info info = getCurrentTokenInfo();
+                buf << consume() << consume();
+                // Parse until we hit another */
+                while (peek().has_value() && peek().value() != '*' && peek(1).has_value() && peek(1).value() != '#') {
+                    buf << consume();
+                }
+                buf << consume() << consume();
+                auto comment = buf.str();
+                comment = comment.erase(0, 2);
+                comment = comment.erase(comment.size() - 2, 2);
+                //tokens.push_back(makeToken(Token::Kind::Comment, info, comment));
+                buf.str("");
+            } else {
+                // Parse any single line comments
+                const Token::Info info = getCurrentTokenInfo();
+                buf << consume() << consume();
+                while (peek().has_value() && !isNewline()) {
+                    buf << consume();
+                }
+                auto comment = buf.str();
+                comment = comment.erase(0, 2);
+                //tokens.push_back(makeToken(Token::Kind::Comment, info, comment));
+                buf.str("");
             }
-            auto comment = buf.str();
-            comment = comment.erase(0, 2);
-            tokens.push_back(makeToken(Token::Kind::Comment, info, comment));
-            buf.str("");
-        }
-        else if (peek().value() == '/' && peek(1).value() == '*') {
-            // Parse any multi-line comments
-            const Token::Info info = getCurrentTokenInfo();
-            buf << consume() << consume();
-            // Parse until we hit another */
-            while (peek().has_value() && peek().value() != '*' && peek(1).has_value() && peek(1).value() != '/') {
-                buf << consume();
-            }
-            buf << consume() << consume();
-            auto comment = buf.str();
-            comment = comment.erase(0, 2);
-            comment = comment.erase(comment.size() - 2, 2);
-            tokens.push_back(makeToken(Token::Kind::Comment, info, comment));
-            buf.str("");
         }
         else if (SymbolTokenMap.contains(peek().value()))
         {
