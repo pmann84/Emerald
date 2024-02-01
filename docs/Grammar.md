@@ -14,10 +14,6 @@ $$
 \end{cases} \\
 [\text{IfPredicate}] &\to \begin{cases}
     \text{else if} ([\text{Expr}]) [\text{Scope}] [\text{IfPredicate}] \\
-    \text{[Else]} \\
-    \epsilon
-\end{cases} \\
-[\text{Else}] &\to \begin{cases}
     \text{else} [\text{Scope}] \\
     \epsilon
 \end{cases} \\

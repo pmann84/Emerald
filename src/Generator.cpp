@@ -30,7 +30,7 @@ std::string Generator::generateProgram()
 void Generator::generateStatement(const Node::Statement* statement)
 {
     StatementVisitor statementVisitor(*this);
-    std::visit(statementVisitor, statement->statement);
+    std::visit(statementVisitor, *statement);
 }
 
 void Generator::generateExpr(const Node::Expr* expr)
@@ -42,13 +42,13 @@ void Generator::generateExpr(const Node::Expr* expr)
 void Generator::generateBinExp(const Node::BinExpr *binExpr)
 {
     BinExprVisitor binExprVisitor(*this);
-    std::visit(binExprVisitor, binExpr->expr);
+    std::visit(binExprVisitor, *binExpr);
 }
 
 void Generator::generateTerm(const Node::Term *term)
 {
     TermVisitor termVisitor(*this);
-    std::visit(termVisitor, term->expr);
+    std::visit(termVisitor, *term);
 }
 
 void Generator::generateScope(const Node::Scope *scope)

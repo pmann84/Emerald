@@ -15,6 +15,7 @@ public:
 private:
     [[nodiscard]] std::optional<Token> peek(int64_t offset = 0) const;
     Token consume();
+    std::optional<Token> tryConsume(const std::vector<Token::Kind>& tTypes, const std::string& error);
     std::optional<Token> tryConsume(Token::Kind tType, const std::string& error);
     std::optional<Token> tryConsume(Token::Kind tType);
 
@@ -24,6 +25,7 @@ private:
     std::optional<Node::Expr*> parseExpr(int minPrecedence = 0);
     std::optional<Node::Statement*> parseStatement();
     std::optional<Node::Scope*> parseScope();
+    std::optional<Node::IfPredicate*> parseIfPredicate();
 
 private:
     const std::vector<Token> m_tokens;

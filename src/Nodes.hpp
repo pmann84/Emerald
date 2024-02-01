@@ -38,20 +38,14 @@ namespace Node {
         Expr *lhs, *rhs;
     };
 
-    struct BinExpr
-    {
-        std::variant<BinExprAdd*, BinExprMult*, BinExprMinus*, BinExprDiv*> expr;
-    };
+    using BinExpr = std::variant<BinExprAdd*, BinExprMult*, BinExprMinus*, BinExprDiv*>;
 
     struct TermParen
     {
         Expr* expr;
     };
 
-    struct Term
-    {
-        std::variant<IntLiteral*, Identifier*, TermParen*> expr;
-    };
+    using Term = std::variant<IntLiteral*, Identifier*, TermParen*>;
 
     struct Expr
     {
@@ -75,21 +69,36 @@ namespace Node {
         Expr* assignExpr;
     };
 
-    struct Statement;
+    struct Scope;
+    struct StatementIf;
+    using Statement = std::variant<StatementReturn*, StatementLet*, Scope*, StatementIf*, StatementAssign*>;
+
     struct Scope
     {
         std::vector<Statement*> statements;
+    };
+
+    struct StatementElseIf;
+    struct StatementElse;
+    using IfPredicate = std::variant<StatementElseIf*, StatementElse*>;
+
+    struct StatementElseIf
+    {
+        Expr* expr;
+        Scope* scope;
+        std::optional<IfPredicate*> pred;
     };
 
     struct StatementIf
     {
         Expr* expr;
         Scope* scope;
+        std::optional<IfPredicate*> pred;
     };
 
-    struct Statement
+    struct StatementElse
     {
-        std::variant<StatementReturn*, StatementLet*, Scope*, StatementIf*, StatementAssign*> statement;
+        Scope* scope;
     };
 
     struct Program

@@ -56,8 +56,11 @@ TokenVector Tokeniser::tokenise()
             {
                 m_lineNo++;
                 m_posInLine = 0;
+                consumeNewline();
+            } else {
+                consume();
             }
-            consume();
+
             // Go to the next character
             continue;
         }
@@ -155,6 +158,16 @@ char Tokeniser::consume()
    return m_src.at(m_srcPos++);
 }
 
+void Tokeniser::consumeNewline()
+{
+    if (peek().value() == '\n') {
+        consume();
+    } else if (peek().value() == '\r' && peek(1).value() == '\n') {
+        consume();
+        consume();
+    }
+}
+
 Token::Info Tokeniser::getCurrentTokenInfo() const
 {
     Token::Info info = { .File = m_filename, .Line = m_lineNo, .Pos = m_posInLine };
@@ -163,5 +176,5 @@ Token::Info Tokeniser::getCurrentTokenInfo() const
 
 bool Tokeniser::isNewline() const
 {
-    return  peek().value() == '\n' || peek().value() == '\r';
+    return  peek().value() == '\n' || (peek().value() == '\r' && peek(1).value() == '\n');
 }

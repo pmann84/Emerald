@@ -35,6 +35,20 @@ std::optional<Token> Parser::tryConsume(Token::Kind tType)
     return {};
 }
 
+std::optional<Token> Parser::tryConsume(const std::vector<Token::Kind>& tTypes, const std::string& error) {
+    std::optional<Token> token;
+    for(const auto t : tTypes) {
+        token = tryConsume(t);
+    }
+    if (!token.has_value())
+    {
+        if (peek(-1).has_value()) {
+            addError(peek(-1).value().info().value(), error);
+        }
+    }
+    return token;
+}
+
 std::optional<Token> Parser::tryConsume(Token::Kind tType, const std::string& error)
 {
     auto token = tryConsume(tType);
@@ -43,7 +57,6 @@ std::optional<Token> Parser::tryConsume(Token::Kind tType, const std::string& er
         if (peek(-1).has_value()) {
             addError(peek(-1).value().info().value(), error);
         }
-
     }
     return token;
 }
@@ -109,7 +122,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
                 nodeLhsExpr->expr = exprLhs->expr;
                 addNode->lhs = nodeLhsExpr;
                 addNode->rhs = exprRhs.value();
-                expr->expr = addNode;
+                *expr = addNode;
             }
             else if (op.kind() == Token::Kind::Asterisk)
             {
@@ -117,7 +130,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
                 nodeLhsExpr->expr = exprLhs->expr;
                 multNode->lhs = nodeLhsExpr;
                 multNode->rhs = exprRhs.value();
-                expr->expr = multNode;
+                *expr = multNode;
             }
             else if (op.kind() == Token::Kind::Minus)
             {
@@ -125,7 +138,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
                 nodeLhsExpr->expr = exprLhs->expr;
                 minusNode->lhs = nodeLhsExpr;
                 minusNode->rhs = exprRhs.value();
-                expr->expr = minusNode;
+                *expr = minusNode;
             }
             else if (op.kind() == Token::Kind::ForwardSlash)
             {
@@ -133,7 +146,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
                 nodeLhsExpr->expr = exprLhs->expr;
                 divNode->lhs = nodeLhsExpr;
                 divNode->rhs = exprRhs.value();
-                expr->expr = divNode;
+                *expr = divNode;
             }
             else
             {
@@ -157,7 +170,7 @@ std::optional<Node::Statement*> Parser::parseStatement()
         }
 
         tryConsume(Token::Kind::SemiColon, "Expected ; after expression.");
-        stmt->statement = nodeReturn;
+        *stmt = nodeReturn;
         return stmt;
     } else if (
             peek().has_value() && peek().value().kind() == Token::Kind::Let &&
@@ -175,7 +188,7 @@ std::optional<Node::Statement*> Parser::parseStatement()
         }
 
         tryConsume(Token::Kind::SemiColon, "Expected ; after expression.");
-        stmt->statement = letStatement;
+        *stmt = letStatement;
         return stmt;
     } else if(
             peek().has_value() && peek().value().kind() == Token::Kind::Identifier &&
@@ -191,11 +204,11 @@ std::optional<Node::Statement*> Parser::parseStatement()
         }
 
         tryConsume(Token::Kind::SemiColon, "Expected ; after expression.");
-        stmt->statement = assignStatement;
+        *stmt = assignStatement;
         return stmt;
     } else if (peek().has_value() && peek().value().kind() == Token::Kind::OpenCurly) {
         if (auto scope = parseScope()) {
-            stmt->statement = scope.value();
+            *stmt = scope.value();
             return stmt;
         }
         else
@@ -222,7 +235,9 @@ std::optional<Node::Statement*> Parser::parseStatement()
                 addError(peek().value().info().value(), "Invalid scope.");
             }
         }
-        stmt->statement = ifStmt;
+        ifStmt->pred = parseIfPredicate();
+
+        *stmt = ifStmt;
         return stmt;
     }
     // Return nothing which indicates an invalid statement
@@ -236,7 +251,7 @@ std::optional<Node::Term*> Parser::parseTerm()
         auto expr = m_allocator.alloc<Node::IntLiteral>();
         expr->intLit = intLit.value();
         auto term = m_allocator.alloc<Node::Term>();
-        term->expr = expr;
+        *term = expr;
         return term;
     }
     else if (auto ident = tryConsume(Token::Kind::Identifier))
@@ -244,7 +259,7 @@ std::optional<Node::Term*> Parser::parseTerm()
         auto expr = m_allocator.alloc<Node::Identifier>();
         expr->identifier = ident.value();
         auto term = m_allocator.alloc<Node::Term>();
-        term->expr = expr;
+        *term = expr;
         return term;
     }
     else if (auto openParen = tryConsume(Token::Kind::OpenParen))
@@ -258,7 +273,7 @@ std::optional<Node::Term*> Parser::parseTerm()
         auto termParen = m_allocator.alloc<Node::TermParen>();
         termParen->expr = expr.value();
         auto term = m_allocator.alloc<Node::Term>();
-        term->expr = termParen;
+        *term = termParen;
         return term;
     }
     return {};
@@ -287,3 +302,48 @@ void Parser::addError(Token::Info info, std::string message)
     const auto error = makeError(info, message);
     m_errorHandler << error;
 }
+
+std::optional<Node::IfPredicate*> Parser::parseIfPredicate() {
+
+    if (tryConsume(Token::Kind::Else)) {
+        auto ifPredicate = m_allocator.alloc<Node::IfPredicate>();
+        if (tryConsume(Token::Kind::If)) {
+            tryConsume(Token::Kind::OpenParen, "Expected ( after if");
+            auto elseIfStmt = m_allocator.alloc<Node::StatementElseIf>();
+            if (auto expr = parseExpr())
+            {
+                elseIfStmt->expr = expr.value();
+            }
+            tryConsume(Token::Kind::CloseParen, "Expected ) after if expression");
+            if (auto scope = parseScope())
+            {
+                elseIfStmt->scope = scope.value();
+            }
+            else
+            {
+                if (peek().has_value()) {
+                    addError(peek().value().info().value(), "Invalid scope.");
+                }
+            }
+            elseIfStmt->pred = parseIfPredicate();
+
+            *ifPredicate = elseIfStmt;
+        } else {
+            auto elseStmt = m_allocator.alloc<Node::StatementElse>();
+            if (auto scope = parseScope())
+            {
+                elseStmt->scope = scope.value();
+            }
+            else
+            {
+                if (peek().has_value()) {
+                    addError(peek().value().info().value(), "Invalid scope.");
+                }
+            }
+            *ifPredicate = elseStmt;
+        }
+        return ifPredicate;
+    }
+    return {};
+}
+

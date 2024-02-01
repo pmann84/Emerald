@@ -18,6 +18,7 @@ public:
 private:
     [[nodiscard]] std::optional<char> peek(size_t offset = 0) const;
     char consume();
+    void consumeNewline();
     [[nodiscard]] Token::Info getCurrentTokenInfo() const;
     bool isNewline() const;
 
