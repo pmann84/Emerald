@@ -1,17 +1,16 @@
-let x = (10 - 2 #* weird intraline comment... *#* 3) / 2; # 2
-let x2 = 1; # I can comment stuff here - change this to 1 to execute the if(x2) block
+let x = (10 - 2 #* weird intra-line comment... *#* 3) / 2; # 2
+let x2 = 0; # I can comment stuff here - change this to 1 to execute the if(x2) block
 {
     let x3 = 20;
 }
+let x4 = 1; # Change this to 1 to execute below else if block
 # Or I can add a comment here...
 if (x2) {
-    x = 41 + x2;
-    return x;
-} else if (x) {
-    x2 = 43;
-    return x2;
+    x = 41;
+} else if (x4) {
+    x = 42;
 } else {
-    return 44;
+    x = 43;
 }
 #*
     Here is a multi line comment with

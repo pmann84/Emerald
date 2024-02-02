@@ -24,6 +24,7 @@ public:
     void generateBinExp(const Node::BinExpr* binExpr);
     void generateTerm(const Node::Term* term);
     void generateScope(const Node::Scope* scope);
+    void generateIfPredicate(const Node::IfPredicate* ifPredicate, const std::string& endLabel);
 
     void push(const std::string& reg);
     void pop(const std::string& reg);

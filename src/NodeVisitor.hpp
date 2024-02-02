@@ -197,10 +197,48 @@ public:
         generator().generateExpr(ifStatement->expr);
         // Pop the top of the stack (the result of the expr above) into rax
         generator().pop("rax");
-        const auto label = generator().createLabel();
-        output() << "\ttest rax, rax\n";
-        output() << "\tjz " << label << "\n";
+        const auto nextLabel = generator().createLabel();
+        const auto endLabel = generator().createLabel();
+        output() << "\tcmp rax, 0" << "; begin if" << "\n";
+        output() << "\tje " << nextLabel << "\n";
         generator().generateScope(ifStatement->scope);
-        output() << label << ":\n";
+        output() << "\tjmp " << endLabel << "; end if" << "\n";
+        output() << nextLabel << ":\n";
+        if (ifStatement->pred.has_value()) {
+            generator().generateIfPredicate(ifStatement->pred.value(), endLabel);
+        }
+        output() << endLabel << ": " << " ; end of if block" << "\n";
     }
+};
+
+class IfPredicateVisitor : public NodeVisitor
+{
+public:
+    explicit IfPredicateVisitor(Generator& generator, const std::string& endLabel)
+    : NodeVisitor(generator)
+    , m_endLabel(endLabel)
+    {}
+
+    void operator()(const Node::StatementElseIf* elseIfStatement) {
+        // Puts the result of the expr on the top of the stack
+        generator().generateExpr(elseIfStatement->expr);
+        // Pop the top of the stack (the result of the expr above) into rax
+        generator().pop("rax");
+        const auto nextLabel = generator().createLabel();
+        output() << "\tcmp rax, 0 " << "; begin else if" << "\n";
+        output() << "\tje " << nextLabel << "\n";
+        generator().generateScope(elseIfStatement->scope);
+        output() << "\tjmp " << m_endLabel << "; end else if" << "\n";
+        output() << nextLabel << ":\n";
+        if (elseIfStatement->pred.has_value()) {
+            generator().generateIfPredicate(elseIfStatement->pred.value(), m_endLabel);
+        }
+    }
+    void operator()(const Node::StatementElse* elseStatement) {
+        output() << "\t; begin else\n";
+        generator().generateScope(elseStatement->scope);
+    }
+
+private:
+    const std::string& m_endLabel;
 };

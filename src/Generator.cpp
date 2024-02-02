@@ -62,6 +62,11 @@ void Generator::generateScope(const Node::Scope *scope)
     }
 }
 
+void Generator::generateIfPredicate(const Node::IfPredicate *ifPredicate, const std::string& endLabel) {
+    IfPredicateVisitor ifPredicateVisitor(*this, endLabel);
+    std::visit(ifPredicateVisitor, *ifPredicate);
+}
+
 std::stringstream &Generator::output()
 {
     return m_outputStream;
@@ -125,7 +130,7 @@ void Generator::endScope()
 std::string Generator::createLabel()
 {
     std::stringstream ss;
-    ss << "label" << m_labelIndex++;
+    ss << "L" << m_labelIndex++;
     return ss.str();
 }
 
