@@ -1,36 +1,47 @@
 # Emerald Grammar
 $$
-\begin{align}
-[\text{Prog}] &\to [\text{Stmt}]^* \\
-[\text{Stmt}] &\to \begin{cases}
-    \text{return} \; [\text{Expr}]; \\
-    \text{let}\space\text{identifier} = [\text{Expr}]; \\
-    \text{identifier} = [\text{Expr}]; \\
-    [\text{Scope}] \\
-    \text{if} ([\text{Expr}]) \space [\text{Scope}][\text{IfPredicate}] \\
-\end{cases}\\
-[\text{Scope}] &\to \begin{cases}
-    \{[\text{Stmt}]^*\}
-\end{cases} \\
-[\text{IfPredicate}] &\to \begin{cases}
-    \text{else if} ([\text{Expr}]) [\text{Scope}] [\text{IfPredicate}] \\
-    \text{else} [\text{Scope}] \\
-    \epsilon
-\end{cases} \\
-[\text{Expr}] &\to \begin{cases}
-    [\text{Term}] \\
-    [\text{BinExpr}]
-\end{cases} \\
-[\text{BinExpr}] &\to \begin{cases}
-    [\text{Expr}] * [\text{Expr}] & \text{prec = 1} \\
-    [\text{Expr}]\space / \space [\text{Expr}] & \text{prec = 1} \\
-    [\text{Expr}] + [\text{Expr}] & \text{prec = 0} \\
-    [\text{Expr}] - [\text{Expr}] & \text{prec = 0} \\
-\end{cases} \\
-[\text{Term}] &\to \begin{cases}
-    \text{int\_lit} \\
-    \text{identifier} \\
-    ([\text{Expr}])
-\end{cases} \\
-\end{align}
+\begin{align*}
+\text{[WhiteSpace]} &= \text{ ``\space" | ``\textbackslash n" | ``\textbackslash t" | ``\textbackslash r" | ``\textbackslash f" | ``\textbackslash v" ;} \\
+\text{[Digit]} &= \text{``0" | ``1" | ``2" | ``3" | ``4" | ``5" | ``6" | ``7" | ``8" | ``9" ;} \\
+[\text{Terminator}] &= \text{ ``;"; } \\
+[\text{Symbol}] &= \text{`` \{ " | `` \} " | ``(" | ``)" | ``=" | ``;" | ``-" | ``+" | ``*"; } \\
+\\
+[\text{Prog}] &= \text{\{[Stmt]\};} \\
+\\
+\text{[SingleLineComment]} &= \text{``\#'', [Any Character except newline];}\\
+\text{[MultiLineComment]} &= \text{``\#*'', [Any Character including newline], ``*\#'';}\\
+[\text{Comment}] &= \text{[SingleLineComment] | [MultiLineComment];}\\ 
+\\
+[\text{Expr}] &= [\text{Term}] \space | \space [\text{BinaryExpr}];\\
+\\
+[\text{BinaryExpr}] &= [\text{Expr}] * [\text{Expr}] & \text{prec = 1} \\
+&| \space [\text{Expr}]\space / \space [\text{Expr}] & \text{prec = 1} \\
+&| \space [\text{Expr}] + [\text{Expr}] & \text{prec = 0} \\
+&| \space [\text{Expr}] - [\text{Expr}]; & \text{prec = 0} \\
+\\
+[\text{Term}] &= [\text{IntegerLiteral}] \\
+&| \space [\text{Identifier}] \\
+&| \space \text{``(''}, \text{[Expr]}, \text{``)''};\\
+\\
+[\text{Scope}] &= \text{ ``\{'', \{[Stmt]\}, ``\}'';} \\
+\\
+[\text{Stmt}] &= \text{``return'', [Expr], [Terminator]} \\ 
+&| \space \text{``let'', [Identifier], ``='', [Expr], [Terminator]} \\
+&| \space [\text{Identifier}], \text{``=''}, [\text{Expr}], [\text{Terminator}] \\
+&| \space [\text{Scope}] \\
+&| \space [\text{Comment}] \\
+&| \space \text{``if''}, \text{``(''}, \text{[Expr]}, \text{``)''}, [\text{Scope}], [\text{IfPredicate}] \\
+&| \space \text{``while''}, \text{``(''}, \text{[Expr]}, \text{``)''}, [\text{Scope}]; \\
+\\
+[\text{IfPredicate}] &= \text{``else''}, \text{``if''}, \text{``(''}, [\text{Expr}], \text{``)''}, [\text{Scope}], [\text{IfPredicate}] \\
+&| \space \text{else}, [\text{Scope}] \\
+&| \space \epsilon; \\
+\\
+% \text{for} [\text{Expr}] [\text{LoopLimiter}] \text{identifier} [\text{LoopLimiter}] [\text{Expr}] [\text{Scope}]
+% [\text{LoopLimiter}] &\to \begin{cases}
+%     \text{"<"} \\
+%     \text{"<="} \\
+% \end{cases} \\
+\end{align*}
 $$
+
