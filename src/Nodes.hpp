@@ -18,27 +18,57 @@ namespace Node {
 
     struct Expr;
 
-    struct BinExprAdd
-    {
-        Expr *lhs, *rhs;
-    };
+    namespace BinaryExpr {
+        struct Add
+        {
+            Expr *lhs, *rhs;
+        };
 
-    struct BinExprMult
-    {
-        Expr *lhs, *rhs;
-    };
+        struct Multiply
+        {
+            Expr *lhs, *rhs;
+        };
 
-    struct BinExprMinus
-    {
-        Expr *lhs, *rhs;
-    };
+        struct Minus
+        {
+            Expr *lhs, *rhs;
+        };
 
-    struct BinExprDiv
-    {
-        Expr *lhs, *rhs;
-    };
+        struct Divide
+        {
+            Expr *lhs, *rhs;
+        };
+    }
 
-    using BinExpr = std::variant<BinExprAdd*, BinExprMult*, BinExprMinus*, BinExprDiv*>;
+    using BinExpr = std::variant<BinaryExpr::Add*, BinaryExpr::Multiply*, BinaryExpr::Minus*, BinaryExpr::Divide*>;
+
+    namespace RelationalExpr {
+        struct LessThan {
+            Expr *lhs, *rhs;
+        };
+        struct GreaterThan {
+            Expr *lhs, *rhs;
+        };
+        struct LessThanEqual {
+            Expr *lhs, *rhs;
+        };
+        struct GreaterThanEqual {
+            Expr *lhs, *rhs;
+        };
+    }
+
+    using RelExpr = std::variant<RelationalExpr::LessThan*, RelationalExpr::GreaterThan*, RelationalExpr::LessThanEqual*, RelationalExpr::GreaterThanEqual*>;
+
+    namespace EqualityExpr {
+        struct Equal {
+            Expr *lhs, *rhs;
+        };
+        struct NotEqual {
+            Expr *lhs, *rhs;
+        };
+    }
+
+    using EqlExpr = std::variant<EqualityExpr::Equal*, EqualityExpr::NotEqual*>;
 
     struct TermParen
     {
@@ -49,60 +79,73 @@ namespace Node {
 
     struct Expr
     {
-        std::variant<Term*, BinExpr*> expr;
-    };
-
-    struct StatementReturn
-    {
-        Expr* returnExpr;
-    };
-
-    struct StatementLet
-    {
-        Token identifier;
-        Expr* letExpr;
-    };
-
-    struct StatementAssign
-    {
-        Token identifier;
-        Expr* assignExpr;
+        std::variant<Term*, BinExpr*, EqlExpr*, RelExpr*> expr;
     };
 
     struct Scope;
-    struct StatementIf;
-    using Statement = std::variant<StatementReturn*, StatementLet*, Scope*, StatementIf*, StatementAssign*>;
+    namespace Statement {
+        struct If;
+        struct While;
+
+        struct Return
+        {
+            Expr* returnExpr;
+        };
+
+        struct Let
+        {
+            Token identifier;
+            Expr* letExpr;
+        };
+
+        struct Assign
+        {
+            Token identifier;
+            Expr* assignExpr;
+        };
+    }
+    using Stmt = std::variant<Statement::Return*, Statement::Let*, Scope*, Statement::If*, Statement::Assign*, Statement::While*>;
 
     struct Scope
     {
-        std::vector<Statement*> statements;
+        std::vector<Stmt*> statements;
     };
 
-    struct StatementElseIf;
-    struct StatementElse;
-    using IfPredicate = std::variant<StatementElseIf*, StatementElse*>;
+    namespace Statement {
+        struct ElseIf;
+        struct Else;
+    }
+    using IfPredicate = std::variant<Statement::ElseIf*, Statement::Else*>;
 
-    struct StatementElseIf
-    {
-        Expr* expr;
-        Scope* scope;
-        std::optional<IfPredicate*> pred;
-    };
+    namespace Statement {
+        struct ElseIf
+        {
+            Expr* expr;
+            Scope* scope;
+            std::optional<IfPredicate*> pred;
+        };
 
-    struct StatementIf
-    {
-        Expr* expr;
-        Scope* scope;
-        std::optional<IfPredicate*> pred;
-    };
+        struct If
+        {
+            Expr* expr;
+            Scope* scope;
+            std::optional<IfPredicate*> pred;
+        };
 
-    struct StatementElse
-    {
-        Scope* scope;
-    };
+        struct Else
+        {
+            Scope* scope;
+        };
+
+        struct While {
+            Expr* expr;
+            Scope* scope;
+        };
+    }
+
 
     struct Program
     {
-        std::vector<Statement*> statements;
+        std::vector<Stmt*> statements;
     };
 }

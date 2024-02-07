@@ -19,9 +19,11 @@ public:
     ErrorHandler& errors();
     size_t stackLocation() const;
 
-    void generateStatement(const Node::Statement* statement);
+    void generateStatement(const Node::Stmt* statement);
     void generateExpr(const Node::Expr* expr);
     void generateBinExp(const Node::BinExpr* binExpr);
+    void generateRelExp(const Node::RelExpr* relExpr);
+    void generateEqlExp(const Node::EqlExpr* eqlExpr);
     void generateTerm(const Node::Term* term);
     void generateScope(const Node::Scope* scope);
     void generateIfPredicate(const Node::IfPredicate* ifPredicate, const std::string& endLabel);

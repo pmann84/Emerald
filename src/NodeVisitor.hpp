@@ -76,13 +76,19 @@ public:
     {
         generator().generateBinExp(binExpr);
     }
+    void operator()(const Node::RelExpr* relExpr) {
+        generator().generateRelExp(relExpr);
+    }
+    void operator()(const Node::EqlExpr* eqlExpr) {
+        generator().generateEqlExp(eqlExpr);
+    }
 };
 
 class BinExprVisitor : public NodeVisitor
 {
 public:
     explicit BinExprVisitor(Generator& generator): NodeVisitor(generator) {}
-    void operator()(const Node::BinExprAdd* add)
+    void operator()(const Node::BinaryExpr::Add* add)
     {
         // This pushes both onto the stop of the stack
         generator().generateExpr(add->rhs);
@@ -93,7 +99,7 @@ public:
         output() << "\tadd rax, rbx\n";
         generator().push("rax");
     }
-    void operator()(const Node::BinExprMult* mult)
+    void operator()(const Node::BinaryExpr::Multiply* mult)
     {
         // This pushes both onto the stop of the stack
         generator().generateExpr(mult->rhs);
@@ -104,7 +110,7 @@ public:
         output() << "\tmul rbx\n";
         generator().push("rax");
     }
-    void operator()(const Node::BinExprMinus* minus)
+    void operator()(const Node::BinaryExpr::Minus* minus)
     {
         // This pushes both onto the stop of the stack
         // Need to do RHS first otherwise we are minus-ing in the wrong order (associativity and all that)
@@ -115,7 +121,7 @@ public:
         output() << "\tsub rax, rbx\n";
         generator().push("rax");
     }
-    void operator()(const Node::BinExprDiv* div)
+    void operator()(const Node::BinaryExpr::Divide* div)
     {
         // This pushes both onto the stop of the stack
         generator().generateExpr(div->rhs);
@@ -132,11 +138,11 @@ class StatementVisitor : public NodeVisitor
 {
 public:
     explicit StatementVisitor(Generator& generator): NodeVisitor(generator) {}
-    void operator()(const Node::StatementLet* letStatement)
+    void operator()(const Node::Statement::Let* letStatement)
     {
         size_t offset = 0;
         const auto ss = scopes();
-        if (scopes().size() > 0)
+        if (!scopes().empty())
         {
             offset = scopes().back();
             if (offset < 0 || offset > variables().size())
@@ -160,7 +166,7 @@ public:
             generator().generateExpr(letStatement->letExpr); // This inserts the variable onto the stack
         }
     }
-    void operator()(const Node::StatementAssign* assignStatement) {
+    void operator()(const Node::Statement::Assign* assignStatement) {
         const auto it = std::ranges::find_if(
                 variables(),
                 [&assignStatement](const Variable& var) {
@@ -180,7 +186,7 @@ public:
             generator().move("[rsp + " + std::to_string(offset * 8) + "]", "rax");
         }
     }
-    void operator()(const Node::StatementReturn* returnStatement)
+    void operator()(const Node::Statement::Return* returnStatement)
     {
         generator().generateExpr(returnStatement->returnExpr);
         output() << "\tmov rax, 60\n";
@@ -191,7 +197,7 @@ public:
     {
         generator().generateScope(statementScope);
     }
-    void operator()(const Node::StatementIf* ifStatement)
+    void operator()(const Node::Statement::If* ifStatement)
     {
         // Puts the result of the expr on the top of the stack
         generator().generateExpr(ifStatement->expr);
@@ -209,6 +215,9 @@ public:
         }
         output() << endLabel << ": " << " ; end of if block" << "\n";
     }
+    void operator()(const Node::Statement::While* whileStatement) {
+        // TODO: Generate asm for while statement
+    }
 };
 
 class IfPredicateVisitor : public NodeVisitor
@@ -219,7 +228,7 @@ public:
     , m_endLabel(endLabel)
     {}
 
-    void operator()(const Node::StatementElseIf* elseIfStatement) {
+    void operator()(const Node::Statement::ElseIf* elseIfStatement) {
         // Puts the result of the expr on the top of the stack
         generator().generateExpr(elseIfStatement->expr);
         // Pop the top of the stack (the result of the expr above) into rax
@@ -234,11 +243,39 @@ public:
             generator().generateIfPredicate(elseIfStatement->pred.value(), m_endLabel);
         }
     }
-    void operator()(const Node::StatementElse* elseStatement) {
+    void operator()(const Node::Statement::Else* elseStatement) {
         output() << "\t; begin else\n";
         generator().generateScope(elseStatement->scope);
     }
 
 private:
     const std::string& m_endLabel;
+};
+
+class RelExprVisitor : public NodeVisitor {
+public:
+    explicit RelExprVisitor(Generator& generator): NodeVisitor(generator) {}
+    void operator()(const Node::RelationalExpr::LessThan* lessThanExpr) {
+        // TODO: Generate asm
+    }
+    void operator()(const Node::RelationalExpr::GreaterThan* greaterThanExpr) {
+        // TODO: Generate asm
+    }
+    void operator()(const Node::RelationalExpr::LessThanEqual* lessThanEqlExpr) {
+        // TODO: Generate asm
+    }
+    void operator()(const Node::RelationalExpr::GreaterThanEqual* greaterThanEqlExpr) {
+        // TODO: Generate asm
+    }
+};
+
+class EqlExprVisitor : public NodeVisitor {
+public:
+    explicit EqlExprVisitor(Generator& generator): NodeVisitor(generator) {}
+    void operator()(const Node::EqualityExpr::Equal* eqlExpr) {
+        // TODO: Generate asm
+    }
+    void operator()(const Node::EqualityExpr::NotEqual* notEqlExpr) {
+        // TODO: Generate asm
+    }
 };

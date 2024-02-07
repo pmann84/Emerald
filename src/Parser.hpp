@@ -23,7 +23,7 @@ private:
 
     std::optional<Node::Term*> parseTerm();
     std::optional<Node::Expr*> parseExpr(int minPrecedence = 0);
-    std::optional<Node::Statement*> parseStatement();
+    std::optional<Node::Stmt*> parseStatement();
     std::optional<Node::Scope*> parseScope();
     std::optional<Node::IfPredicate*> parseIfPredicate();
 

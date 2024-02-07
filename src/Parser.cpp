@@ -118,7 +118,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
             auto nodeLhsExpr = m_allocator.alloc<Node::Expr>();
             if (op.kind() == Token::Kind::Plus)
             {
-                auto addNode = m_allocator.alloc<Node::BinExprAdd>();
+                auto addNode = m_allocator.alloc<Node::BinaryExpr::Add>();
                 nodeLhsExpr->expr = exprLhs->expr;
                 addNode->lhs = nodeLhsExpr;
                 addNode->rhs = exprRhs.value();
@@ -126,7 +126,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
             }
             else if (op.kind() == Token::Kind::Asterisk)
             {
-                auto multNode = m_allocator.alloc<Node::BinExprMult>();
+                auto multNode = m_allocator.alloc<Node::BinaryExpr::Multiply>();
                 nodeLhsExpr->expr = exprLhs->expr;
                 multNode->lhs = nodeLhsExpr;
                 multNode->rhs = exprRhs.value();
@@ -134,7 +134,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
             }
             else if (op.kind() == Token::Kind::Minus)
             {
-                auto minusNode = m_allocator.alloc<Node::BinExprMinus>();
+                auto minusNode = m_allocator.alloc<Node::BinaryExpr::Minus>();
                 nodeLhsExpr->expr = exprLhs->expr;
                 minusNode->lhs = nodeLhsExpr;
                 minusNode->rhs = exprRhs.value();
@@ -142,7 +142,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
             }
             else if (op.kind() == Token::Kind::ForwardSlash)
             {
-                auto divNode = m_allocator.alloc<Node::BinExprDiv>();
+                auto divNode = m_allocator.alloc<Node::BinaryExpr::Divide>();
                 nodeLhsExpr->expr = exprLhs->expr;
                 divNode->lhs = nodeLhsExpr;
                 divNode->rhs = exprRhs.value();
@@ -158,11 +158,11 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
     return exprLhs;
 }
 
-std::optional<Node::Statement*> Parser::parseStatement()
+std::optional<Node::Stmt*> Parser::parseStatement()
 {
-    auto stmt = m_allocator.alloc<Node::Statement>();
+    auto stmt = m_allocator.alloc<Node::Stmt>();
     if (tryConsume(Token::Kind::Return)) {
-        auto nodeReturn = m_allocator.alloc<Node::StatementReturn>();
+        auto nodeReturn = m_allocator.alloc<Node::Statement::Return>();
         if (auto nodeExpr = parseExpr()) {
             nodeReturn->returnExpr = nodeExpr.value();
         } else {
@@ -178,7 +178,7 @@ std::optional<Node::Statement*> Parser::parseStatement()
             peek(2).has_value() && peek(2).value().kind() == Token::Kind::Equals
     ) {
         consume();
-        auto letStatement = m_allocator.alloc<Node::StatementLet>();
+        auto letStatement = m_allocator.alloc<Node::Statement::Let>();
         letStatement->identifier = consume();
         consume(); // consume equals
         if (auto expr = parseExpr()) {
@@ -194,7 +194,7 @@ std::optional<Node::Statement*> Parser::parseStatement()
             peek().has_value() && peek().value().kind() == Token::Kind::Identifier &&
             peek(1).has_value() && peek(1).value().kind() == Token::Kind::Equals
     ) {
-        auto assignStatement = m_allocator.alloc<Node::StatementAssign>();
+        auto assignStatement = m_allocator.alloc<Node::Statement::Assign>();
         assignStatement->identifier = consume();
         consume(); // consume equals
         if (auto expr = parseExpr()) {
@@ -219,7 +219,7 @@ std::optional<Node::Statement*> Parser::parseStatement()
     else if (auto ifStatement = tryConsume(Token::Kind::If))
     {
         tryConsume(Token::Kind::OpenParen, "Expected ( after if");
-        auto ifStmt = m_allocator.alloc<Node::StatementIf>();
+        auto ifStmt = m_allocator.alloc<Node::Statement::If>();
         if (auto expr = parseExpr())
         {
             ifStmt->expr = expr.value();
@@ -239,6 +239,8 @@ std::optional<Node::Statement*> Parser::parseStatement()
 
         *stmt = ifStmt;
         return stmt;
+    } else if (auto whileStatement = tryConsume(Token::Kind::While)) {
+        // TODO: Parse while statement
     }
     // Return nothing which indicates an invalid statement
     return {};
@@ -309,7 +311,7 @@ std::optional<Node::IfPredicate*> Parser::parseIfPredicate() {
         auto ifPredicate = m_allocator.alloc<Node::IfPredicate>();
         if (tryConsume(Token::Kind::If)) {
             tryConsume(Token::Kind::OpenParen, "Expected ( after if");
-            auto elseIfStmt = m_allocator.alloc<Node::StatementElseIf>();
+            auto elseIfStmt = m_allocator.alloc<Node::Statement::ElseIf>();
             if (auto expr = parseExpr())
             {
                 elseIfStmt->expr = expr.value();
@@ -329,7 +331,7 @@ std::optional<Node::IfPredicate*> Parser::parseIfPredicate() {
 
             *ifPredicate = elseIfStmt;
         } else {
-            auto elseStmt = m_allocator.alloc<Node::StatementElse>();
+            auto elseStmt = m_allocator.alloc<Node::Statement::Else>();
             if (auto scope = parseScope())
             {
                 elseStmt->scope = scope.value();

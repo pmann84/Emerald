@@ -1,7 +1,7 @@
 # Emerald Grammar
 $$
 \begin{align*}
-\text{[WhiteSpace]} &= \text{ ``\space" | ``\textbackslash n" | ``\textbackslash t" | ``\textbackslash r" | ``\textbackslash f" | ``\textbackslash v" ;} \\
+\text{[WhiteSpace]} &= \text{ ``\space'' | ``\textbackslash n'' | ``\textbackslash t" | ``\textbackslash r" | ``\textbackslash f" | ``\textbackslash v" ;} \\
 \text{[Digit]} &= \text{``0" | ``1" | ``2" | ``3" | ``4" | ``5" | ``6" | ``7" | ``8" | ``9" ;} \\
 [\text{Terminator}] &= \text{ ``;"; } \\
 [\text{Symbol}] &= \text{`` \{ " | `` \} " | ``(" | ``)" | ``=" | ``;" | ``-" | ``+" | ``*"; } \\
@@ -12,12 +12,20 @@ $$
 \text{[MultiLineComment]} &= \text{``\#*'', [Any Character including newline], ``*\#'';}\\
 [\text{Comment}] &= \text{[SingleLineComment] | [MultiLineComment];}\\ 
 \\
-[\text{Expr}] &= [\text{Term}] \space | \space [\text{BinaryExpr}];\\
+[\text{Expr}] &= [\text{Term}] \space | \space [\text{BinaryExpr}] \space | \space [\text{RelationalExpr}] \space | \space [\text{EqualityExpr}];\\
 \\
-[\text{BinaryExpr}] &= [\text{Expr}] * [\text{Expr}] & \text{prec = 1} \\
-&| \space [\text{Expr}]\space / \space [\text{Expr}] & \text{prec = 1} \\
-&| \space [\text{Expr}] + [\text{Expr}] & \text{prec = 0} \\
-&| \space [\text{Expr}] - [\text{Expr}]; & \text{prec = 0} \\
+[\text{BinaryExpr}] &= [\text{Expr}],\space *,\space [\text{Expr}] & \text{prec = 1} \\
+&| \space [\text{Expr}],\space /,\space [\text{Expr}] & \text{prec = 1} \\
+&| \space [\text{Expr}],\space +,\space [\text{Expr}] & \text{prec = 0} \\
+&| \space [\text{Expr}],\space -,\space [\text{Expr}]; & \text{prec = 0} \\
+\\
+[\text{RelationalExpr}] &= [\text{Expr}],\space <,\space [\text{Expr}]\\
+&| \space [\text{Expr}],\space >,\space [\text{Expr}]\\
+&| \space [\text{Expr}],\space <=,\space [\text{Expr}]\\
+&| \space [\text{Expr}],\space >=,\space [\text{Expr}]\\
+\\
+[\text{EqualityExpr}] &= [\text{Expr}],\space ==,\space [\text{Expr}]\\
+&| \space [\text{Expr}],\space !=,\space [\text{Expr}]\\
 \\
 [\text{Term}] &= [\text{IntegerLiteral}] \\
 &| \space [\text{Identifier}] \\

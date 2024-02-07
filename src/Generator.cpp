@@ -27,7 +27,7 @@ std::string Generator::generateProgram()
     return output().str();
 }
 
-void Generator::generateStatement(const Node::Statement* statement)
+void Generator::generateStatement(const Node::Stmt* statement)
 {
     StatementVisitor statementVisitor(*this);
     std::visit(statementVisitor, *statement);
@@ -43,6 +43,16 @@ void Generator::generateBinExp(const Node::BinExpr *binExpr)
 {
     BinExprVisitor binExprVisitor(*this);
     std::visit(binExprVisitor, *binExpr);
+}
+
+void Generator::generateRelExp(const Node::RelExpr *relExpr) {
+    RelExprVisitor relExprVisitor(*this);
+    std::visit(relExprVisitor, *relExpr);
+}
+
+void Generator::generateEqlExp(const Node::EqlExpr *eqlExpr) {
+    EqlExprVisitor eqlExprVisitor(*this);
+    std::visit(eqlExprVisitor, *eqlExpr);
 }
 
 void Generator::generateTerm(const Node::Term *term)
