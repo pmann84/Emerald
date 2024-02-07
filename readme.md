@@ -5,6 +5,26 @@ An educational attempt to invent a programming language called Emerald. This rep
 this. The main part of this is the Emerald compiler. This may expand to include tooling also.
 
 ## Language Overview
+Support for features is slow as this is an educational project. You can see the language grammar in the [`docs` folder of this repo](docs/Grammar.md). Currently, Emerald supports the following programming constructs:
+- Single and Multiline comments (using `#` and `#*...*#` respectively)
+- Integer data types ONLY
+- Variable assignment and reassignment (assignment using `let`)
+- Basic mathematical expressions using `+`, `-`, `*`, `/`
+- If/else-if/else statements (`if (...) {} else if (...) {} else {}`)
+
+### Features in progress
+- While loop (`while (...) {}`)
+- Relational and equality expressions (`==`, `!=`, `<`, `>`, `<=`, `>=`)
+
+### Up-and-Coming Features
+- For loop
+- Basic Functions
+- Variable assignment in if/while expression (`if (let a = ...) {}` etc)
+- External code
+- and more...
+
+### Sample
+There is a full sample in the 
 
 ## Tech Stack & Dependencies
 The compiler itself will start in C++ (in the far-flung future maybe we will build the compiler in Emerald but this 

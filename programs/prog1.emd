@@ -21,6 +21,5 @@ while (x2) {
     some interesting info about the code
     that we probably don't need!
 *#
-for(let i = 0; i)
 let y = x + 5;
 return y;

@@ -1,4 +1,6 @@
 # Emerald Grammar
+Below is the proposed grammar for the Emerald language. This is my ill-informed attempt at writing a grammar, I have no previous experience of writing grammars or compilers. This attempts to loosely follow ENBF.
+
 $$
 \begin{align*}
 \text{[WhiteSpace]} &= \text{ ``\space'' | ``\textbackslash n'' | ``\textbackslash t" | ``\textbackslash r" | ``\textbackslash f" | ``\textbackslash v" ;} \\
