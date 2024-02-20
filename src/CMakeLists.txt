@@ -11,14 +11,16 @@ target_sources(${PROJECT_NAME} PRIVATE
     Parser.hpp Parser.cpp
     Generator.hpp Generator.cpp
     Assembler.hpp Assembler.cpp
-    Linker.hpp Linker.cpp
+    linker.hpp
+    linux_linker.hpp linux_linker.cpp
+    windows_linker.hpp windows_linker.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}
         PUBLIC EmeraldLib
+        PUBLIC sage
 )
 
 get_target_property(EmeraldLib_INCLUDES EmeraldLib INCLUDE_DIRECTORIES)
 target_include_directories(${PROJECT_NAME}
-        PRIVATE ${EmeraldLib_INCLUDES}
-        PRIVATE ${CPPARGPARSE_INCLUDE_DIRS})
+        PRIVATE ${EmeraldLib_INCLUDES})

@@ -1,11 +1,17 @@
-#include "../lib/Tokeniser.hpp"
+#include <Tokeniser.hpp>
 #include "Parser.hpp"
 #include "Generator.hpp"
 #include "Assembler.hpp"
-#include "Linker.hpp"
-#include "../lib/CompilerError.hpp"
+#include "linker.hpp"
+#ifdef __WIN64
+#include "windows_linker.hpp"
+#endif
+#ifdef __linux__
+#include "linux_linker.hpp"
+#endif
+#include <CompilerError.hpp>
 
-#include <argparse.h>
+#include <sage/argparse/argparse.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -13,7 +19,7 @@
 int main(int argc, char** argv)
 {
     // Parse the arguments
-    auto argParser = argparse::argument_parser("Emerald", "");
+    auto argParser = sage::argparse::argument_parser("Emerald", "");
     argParser.add_argument("src").help("Source file to compile.");
     argParser.add_argument({"-o", "-out"}).help("Optional output name.");
     argParser.parse_args(argc, argv);
@@ -75,8 +81,14 @@ int main(int argc, char** argv)
         assembler.generate(generatedAsm);
 
         // Link
-        Linker linker(outName);
-        linker.link();
+        std::unique_ptr<linker> linker;
+#ifdef __WIN64
+        linker = std::make_unique<windows_linker>(outName);
+#endif
+#ifdef __linux__
+        linker = std::make_unique<linux_linker>(outName);
+#endif
+        linker->link();
     }
     return 0;
 }
