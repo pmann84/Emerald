@@ -4,7 +4,7 @@
 #include <fstream>
 #include <iostream>
 
-Assembler::Assembler(const std::string& outName) : m_outName(outName)
+Assembler::Assembler(const std::string& outName, AsmFormat format) : m_outName(outName), m_format(format)
 {
 }
 
@@ -19,7 +19,17 @@ void Assembler::generate(const std::string& asmStr)
     }
 
     std::stringstream assembleCmd;
-    assembleCmd << "nasm -felf64 " << outputFilename;
+    assembleCmd << "nasm ";
+    switch (m_format)
+    {
+        case AsmFormat::Elf:
+            assembleCmd << "-felf64";
+            break;
+        case AsmFormat::Win:
+            assembleCmd << "-fwin64";
+            break;
+    }
+    assembleCmd << " " << outputFilename;
     std::cout << assembleCmd.str() << std::endl;
     std::system(assembleCmd.str().c_str());
 }

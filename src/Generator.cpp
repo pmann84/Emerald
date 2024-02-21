@@ -10,7 +10,10 @@ Generator::Generator(Node::Program root, ErrorHandler& errorHandler) : m_root(st
 
 std::string Generator::generateProgram()
 {
-    output() <<"global _start\n\n_start:\n";
+    // This section is required on windows compilations
+    // but not on linux, we can probably make this better
+    output() << "section .text\n\n";
+    output() << "global start\n\nstart:\n";
 
     if (!m_root.statements.empty()) {
         for (const auto statement: m_root.statements) {

@@ -77,7 +77,14 @@ int main(int argc, char** argv)
         argParser.try_get<std::string>("out", outName);
 
         // Generate assembly
-        Assembler assembler(outName);
+        AsmFormat fmt = AsmFormat::Elf;
+#ifdef __WIN64
+        fmt = AsmFormat::Win;
+#endif
+#ifdef __linux__
+        fmt = AsmFormat::Elf;
+#endif
+        Assembler assembler(outName, fmt);
         assembler.generate(generatedAsm);
 
         // Link

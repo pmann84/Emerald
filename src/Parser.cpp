@@ -1,4 +1,5 @@
 #include <cassert>
+#include "rules.hpp"
 #include "Parser.hpp"
 #include "Nodes.hpp"
 
@@ -18,6 +19,31 @@ std::optional<Token> Parser::peek(int64_t offset) const
     return m_tokens.at(m_tokenPos + offset);
 }
 
+Token Parser::peek_value(int64_t offset) const
+{
+    return peek(offset).value();
+}
+
+bool Parser::peek_has_value(int64_t offset) const
+{
+    return peek(offset).has_value();
+}
+
+bool Parser::peek_for_kind(Token::Kind tType, int64_t offset) const
+{
+    return peek_has_value(offset) && peek_value(offset).kind() == tType;
+}
+
+bool Parser::peek_for_rule(std::vector<Token::Kind> rule) const
+{
+    bool peek_successful = true;
+    for (auto i = 0; i < rule.size(); ++i){
+        const auto tKind = rule.at(i);
+        peek_successful &= peek_for_kind(tKind, i);
+    }
+    return peek_successful;
+}
+
 Token Parser::consume()
 {
     if (m_tokenPos < m_tokens.size()) {
@@ -28,7 +54,7 @@ Token Parser::consume()
 
 std::optional<Token> Parser::tryConsume(Token::Kind tType)
 {
-    if (peek().has_value() && peek().value().kind() == tType)
+    if (peek_has_value() && peek_value().kind() == tType)
     {
         return consume();
     }
@@ -42,8 +68,8 @@ std::optional<Token> Parser::tryConsume(const std::vector<Token::Kind>& tTypes, 
     }
     if (!token.has_value())
     {
-        if (peek(-1).has_value()) {
-            addError(peek(-1).value().info().value(), error);
+        if (peek_has_value(-1)) {
+            addError(peek_value(-1).info().value(), error);
         }
     }
     return token;
@@ -54,8 +80,8 @@ std::optional<Token> Parser::tryConsume(Token::Kind tType, const std::string& er
     auto token = tryConsume(tType);
     if (!token.has_value())
     {
-        if (peek(-1).has_value()) {
-            addError(peek(-1).value().info().value(), error);
+        if (peek_has_value(-1)) {
+            addError(peek_value(-1).info().value(), error);
         }
     }
     return token;
@@ -64,13 +90,13 @@ std::optional<Token> Parser::tryConsume(Token::Kind tType, const std::string& er
 Node::Program Parser::parse()
 {
     Node::Program program;
-    while (peek().has_value())
+    while (peek_has_value())
     {
         if (!tryConsume(Token::Kind::Comment)) {
             if (auto statement = parseStatement()) {
                 program.statements.push_back(statement.value());
             } else {
-                addError(peek().value().info().value(), "Invalid statement.");
+                addError(peek_value().info().value(), "Invalid statement.");
             }
         }
     }
@@ -110,7 +136,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
         auto exprRhs = parseExpr(nextMinPrecedence);
         if (!exprRhs.has_value())
         {
-            addError(peek().value().info().value(), "Unable to parse expression");
+            addError(peek_value().info().value(), "Unable to parse expression");
         }
         else
         {
@@ -166,17 +192,13 @@ std::optional<Node::Stmt*> Parser::parseStatement()
         if (auto nodeExpr = parseExpr()) {
             nodeReturn->returnExpr = nodeExpr.value();
         } else {
-            addError(peek().value().info().value(), "Invalid expression after return.");
+            addError(peek_value().info().value(), "Invalid expression after return.");
         }
 
         tryConsume(Token::Kind::SemiColon, "Expected ; after expression.");
         *stmt = nodeReturn;
         return stmt;
-    } else if (
-            peek().has_value() && peek().value().kind() == Token::Kind::Let &&
-            peek(1).has_value() && peek(1).value().kind() == Token::Kind::Identifier &&
-            peek(2).has_value() && peek(2).value().kind() == Token::Kind::Equals
-    ) {
+    } else if (peek_for_rule(emerald_grammar_rules.at("variable_assign"))) {
         consume();
         auto letStatement = m_allocator.alloc<Node::Statement::Let>();
         letStatement->identifier = consume();
@@ -184,36 +206,33 @@ std::optional<Node::Stmt*> Parser::parseStatement()
         if (auto expr = parseExpr()) {
             letStatement->letExpr = expr.value();
         } else {
-            addError(peek().value().info().value(), "Invalid expression in variable definition.");
+            addError(peek_value().info().value(), "Invalid expression in variable definition.");
         }
 
         tryConsume(Token::Kind::SemiColon, "Expected ; after expression.");
         *stmt = letStatement;
         return stmt;
-    } else if(
-            peek().has_value() && peek().value().kind() == Token::Kind::Identifier &&
-            peek(1).has_value() && peek(1).value().kind() == Token::Kind::Equals
-    ) {
+    } else if(peek_for_rule(emerald_grammar_rules.at("variable_reassign"))) {
         auto assignStatement = m_allocator.alloc<Node::Statement::Assign>();
         assignStatement->identifier = consume();
         consume(); // consume equals
         if (auto expr = parseExpr()) {
             assignStatement->assignExpr = expr.value();
         } else {
-            addError(peek().value().info().value(), "Invalid expression in variable assignment.");
+            addError(peek_value().info().value(), "Invalid expression in variable assignment.");
         }
 
         tryConsume(Token::Kind::SemiColon, "Expected ; after expression.");
         *stmt = assignStatement;
         return stmt;
-    } else if (peek().has_value() && peek().value().kind() == Token::Kind::OpenCurly) {
+    } else if (peek_for_kind(Token::Kind::OpenCurly)) {
         if (auto scope = parseScope()) {
             *stmt = scope.value();
             return stmt;
         }
         else
         {
-            addError(peek().value().info().value(), "Invalid scope.");
+            addError(peek_value().info().value(), "Invalid scope.");
         }
     }
     else if (auto ifStatement = tryConsume(Token::Kind::If))
@@ -231,8 +250,8 @@ std::optional<Node::Stmt*> Parser::parseStatement()
         }
         else
         {
-            if (peek().has_value()) {
-                addError(peek().value().info().value(), "Invalid scope.");
+            if (peek_has_value()) {
+                addError(peek_value().info().value(), "Invalid scope.");
             }
         }
         ifStmt->pred = parseIfPredicate();
@@ -269,7 +288,7 @@ std::optional<Node::Term*> Parser::parseTerm()
         auto expr = parseExpr();
         if (!expr.has_value())
         {
-            addError(peek(-1).value().info().value(), "Expected expression after open parenthesis.");
+            addError(peek_value(-1).info().value(), "Expected expression after open parenthesis.");
         }
         tryConsume(Token::Kind::CloseParen, "Expected close parenthesis.");
         auto termParen = m_allocator.alloc<Node::TermParen>();
@@ -323,8 +342,8 @@ std::optional<Node::IfPredicate*> Parser::parseIfPredicate() {
             }
             else
             {
-                if (peek().has_value()) {
-                    addError(peek().value().info().value(), "Invalid scope.");
+                if (peek_has_value()) {
+                    addError(peek_value().info().value(), "Invalid scope.");
                 }
             }
             elseIfStmt->pred = parseIfPredicate();
@@ -338,8 +357,8 @@ std::optional<Node::IfPredicate*> Parser::parseIfPredicate() {
             }
             else
             {
-                if (peek().has_value()) {
-                    addError(peek().value().info().value(), "Invalid scope.");
+                if (peek_has_value()) {
+                    addError(peek_value().info().value(), "Invalid scope.");
                 }
             }
             *ifPredicate = elseStmt;

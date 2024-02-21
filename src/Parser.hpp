@@ -14,6 +14,11 @@ public:
 
 private:
     [[nodiscard]] std::optional<Token> peek(int64_t offset = 0) const;
+    [[nodiscard]] Token peek_value(int64_t offset = 0) const;
+    [[nodiscard]] bool peek_has_value(int64_t offset = 0) const;
+    [[nodiscard]] bool peek_for_kind(Token::Kind tType, int64_t offset = 0) const;
+    [[nodiscard]] bool peek_for_rule(std::vector<Token::Kind> rule) const;
+
     Token consume();
     std::optional<Token> tryConsume(const std::vector<Token::Kind>& tTypes, const std::string& error);
     std::optional<Token> tryConsume(Token::Kind tType, const std::string& error);

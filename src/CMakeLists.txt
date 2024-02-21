@@ -14,6 +14,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     linker.hpp
     linux_linker.hpp linux_linker.cpp
     windows_linker.hpp windows_linker.cpp
+    rules.hpp
 )
 
 target_link_libraries(${PROJECT_NAME}
