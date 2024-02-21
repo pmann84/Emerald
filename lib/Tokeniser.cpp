@@ -115,7 +115,7 @@ TokenVector Tokeniser::tokenise()
             } else {
                 // Parse any single line comments
                 const Token::Info info = getCurrentTokenInfo();
-                buf << consume() << consume();
+                buf << consume();
                 while (peek().has_value() && !isNewline()) {
                     buf << consume();
                 }
