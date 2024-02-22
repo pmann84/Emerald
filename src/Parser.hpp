@@ -24,7 +24,7 @@ private:
     std::optional<Token> tryConsume(Token::Kind tType, const std::string& error);
     std::optional<Token> tryConsume(Token::Kind tType);
 
-    void addError(Token::Info info, std::string message);
+    void add_error(Token::Info info, std::string message);
 
     std::optional<Node::Term*> parseTerm();
     std::optional<Node::Expr*> parseExpr(int minPrecedence = 0);

@@ -69,7 +69,7 @@ std::optional<Token> Parser::tryConsume(const std::vector<Token::Kind>& tTypes, 
     if (!token.has_value())
     {
         if (peek_has_value(-1)) {
-            addError(peek_value(-1).info().value(), error);
+            add_error(peek_value(-1).info().value(), error);
         }
     }
     return token;
@@ -81,7 +81,7 @@ std::optional<Token> Parser::tryConsume(Token::Kind tType, const std::string& er
     if (!token.has_value())
     {
         if (peek_has_value(-1)) {
-            addError(peek_value(-1).info().value(), error);
+            add_error(peek_value(-1).info().value(), error);
         }
     }
     return token;
@@ -96,7 +96,7 @@ Node::Program Parser::parse()
             if (auto statement = parseStatement()) {
                 program.statements.push_back(statement.value());
             } else {
-                addError(peek_value().info().value(), "Invalid statement.");
+                add_error(peek_value().info().value(), "Invalid statement.");
             }
         }
     }
@@ -136,7 +136,7 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
         auto exprRhs = parseExpr(nextMinPrecedence);
         if (!exprRhs.has_value())
         {
-            addError(peek_value().info().value(), "Unable to parse expression");
+            add_error(peek_value().info().value(), "Unable to parse expression");
         }
         else
         {
@@ -192,7 +192,7 @@ std::optional<Node::Stmt*> Parser::parseStatement()
         if (auto nodeExpr = parseExpr()) {
             nodeReturn->returnExpr = nodeExpr.value();
         } else {
-            addError(peek_value().info().value(), "Invalid expression after return.");
+            add_error(peek_value().info().value(), "Invalid expression after return.");
         }
 
         tryConsume(Token::Kind::SemiColon, "Expected ; after expression.");
@@ -206,7 +206,7 @@ std::optional<Node::Stmt*> Parser::parseStatement()
         if (auto expr = parseExpr()) {
             letStatement->letExpr = expr.value();
         } else {
-            addError(peek_value().info().value(), "Invalid expression in variable definition.");
+            add_error(peek_value().info().value(), "Invalid expression in variable definition.");
         }
 
         tryConsume(Token::Kind::SemiColon, "Expected ; after expression.");
@@ -219,7 +219,7 @@ std::optional<Node::Stmt*> Parser::parseStatement()
         if (auto expr = parseExpr()) {
             assignStatement->assignExpr = expr.value();
         } else {
-            addError(peek_value().info().value(), "Invalid expression in variable assignment.");
+            add_error(peek_value().info().value(), "Invalid expression in variable assignment.");
         }
 
         tryConsume(Token::Kind::SemiColon, "Expected ; after expression.");
@@ -232,7 +232,7 @@ std::optional<Node::Stmt*> Parser::parseStatement()
         }
         else
         {
-            addError(peek_value().info().value(), "Invalid scope.");
+            add_error(peek_value().info().value(), "Invalid scope.");
         }
     }
     else if (auto ifStatement = tryConsume(Token::Kind::If))
@@ -246,7 +246,7 @@ std::optional<Node::Stmt*> Parser::parseStatement()
         else
         {
             if (peek_has_value()) {
-                addError(peek_value().info().value(), "Invalid scope in if block.");
+                add_error(peek_value().info().value(), "Invalid scope in if block.");
             }
         }
         tryConsume(Token::Kind::CloseParen, "Expected ) after if expression");
@@ -257,7 +257,7 @@ std::optional<Node::Stmt*> Parser::parseStatement()
         else
         {
             if (peek_has_value()) {
-                addError(peek_value().info().value(), "Invalid scope.");
+                add_error(peek_value().info().value(), "Invalid scope.");
             }
         }
         ifStmt->pred = parseIfPredicate();
@@ -274,7 +274,7 @@ std::optional<Node::Stmt*> Parser::parseStatement()
         else
         {
             if (peek_has_value()) {
-                addError(peek_value().info().value(), "Invalid expression in while block.");
+                add_error(peek_value().info().value(), "Invalid expression in while block.");
             }
         }
         tryConsume(Token::Kind::CloseParen, "Expected ) after while expression");
@@ -285,7 +285,7 @@ std::optional<Node::Stmt*> Parser::parseStatement()
         else
         {
             if (peek_has_value()) {
-                addError(peek_value().info().value(), "Invalid scope.");
+                add_error(peek_value().info().value(), "Invalid scope.");
             }
         }
 
@@ -319,7 +319,7 @@ std::optional<Node::Term*> Parser::parseTerm()
         auto expr = parseExpr();
         if (!expr.has_value())
         {
-            addError(peek_value(-1).info().value(), "Expected expression after open parenthesis.");
+            add_error(peek_value(-1).info().value(), "Expected expression after open parenthesis.");
         }
         tryConsume(Token::Kind::CloseParen, "Expected close parenthesis.");
         auto termParen = m_allocator.alloc<Node::TermParen>();
@@ -348,10 +348,10 @@ std::optional<Node::Scope *> Parser::parseScope()
     return scope;
 }
 
-void Parser::addError(Token::Info info, std::string message)
+void Parser::add_error(Token::Info info, std::string message)
 {
     consume();
-    const auto error = makeError(info, message);
+    const auto error = make_error(info, message);
     m_errorHandler << error;
 }
 
@@ -374,7 +374,7 @@ std::optional<Node::IfPredicate*> Parser::parseIfPredicate() {
             else
             {
                 if (peek_has_value()) {
-                    addError(peek_value().info().value(), "Invalid scope.");
+                    add_error(peek_value().info().value(), "Invalid scope.");
                 }
             }
             elseIfStmt->pred = parseIfPredicate();
@@ -389,7 +389,7 @@ std::optional<Node::IfPredicate*> Parser::parseIfPredicate() {
             else
             {
                 if (peek_has_value()) {
-                    addError(peek_value().info().value(), "Invalid scope.");
+                    add_error(peek_value().info().value(), "Invalid scope.");
                 }
             }
             *ifPredicate = elseStmt;

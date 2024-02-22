@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include <sstream>
 
 struct Message
 {
@@ -26,8 +27,11 @@ inline std::ostream& operator<<(std::ostream& os, const Message& error)
     return os;
 }
 
-inline Message makeError(Token::Info info, std::string description) {
-    return { .Kind = Message::Kind::Error, .Info = info, .Description = std::move(description) };
+template<typename ...DescArgT>
+inline Message make_error(Token::Info info, DescArgT ...description) {
+    std::stringstream ss;
+    (ss << ... << description);
+    return { .Kind = Message::Kind::Error, .Info = info, .Description = ss.str() };
 }
 
 class ErrorHandler

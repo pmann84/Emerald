@@ -39,9 +39,7 @@ public:
                 [&identifier](const Variable& var) { return var.name == identifier; });
         if (it == variables().end())
         {
-            std::stringstream errorSs;
-            errorSs << "Undeclared variable " << identifier;
-            const auto error = makeError({}, errorSs.str());
+            const auto error = make_error({}, "Undeclared variable ", identifier);
             errors() << error;
             return;
         }
@@ -157,9 +155,7 @@ public:
 //        if (variables().contains(letStatement->identifier.Value.value()))
         if (it != variables().end())
         {
-            std::stringstream errorSs;
-            errorSs << "Identifier " << letStatement->identifier.value().value() << " already used.";
-            const auto error = makeError(letStatement->identifier.info().value(), errorSs.str());
+            const auto error = make_error(letStatement->identifier.info().value(), "Identifier ", letStatement->identifier.value().value(), " already used.");
             errors() << error;
         } else {
             variables().push_back({ .name = letStatement->identifier.value().value(), .stackPosition = generator().stackLocation() });
@@ -173,9 +169,7 @@ public:
                     return var.name == assignStatement->identifier.value().value();
                 });
         if (it == variables().end()) {
-            std::stringstream errorSs;
-            errorSs << "Undeclared identifier " << assignStatement->identifier.value().value() << ".";
-            const auto error = makeError(assignStatement->identifier.info().value(), errorSs.str());
+            const auto error = make_error(assignStatement->identifier.info().value(), "Undeclared identifier ", assignStatement->identifier.value().value(), ".");
             errors() << error;
         } else {
             generator().generate_expr(assignStatement->assignExpr); // This evaluates the expression and inserts the variable onto the stack
