@@ -243,6 +243,12 @@ std::optional<Node::Stmt*> Parser::parseStatement()
         {
             ifStmt->expr = expr.value();
         }
+        else
+        {
+            if (peek_has_value()) {
+                addError(peek_value().info().value(), "Invalid scope in if block.");
+            }
+        }
         tryConsume(Token::Kind::CloseParen, "Expected ) after if expression");
         if (auto scope = parseScope())
         {
@@ -259,7 +265,32 @@ std::optional<Node::Stmt*> Parser::parseStatement()
         *stmt = ifStmt;
         return stmt;
     } else if (auto whileStatement = tryConsume(Token::Kind::While)) {
-        // TODO: Parse while statement
+        tryConsume(Token::Kind::OpenParen, "Expected ( after while declaration");
+        auto whileStmt = m_allocator.alloc<Node::Statement::While>();
+        if (auto expr = parseExpr())
+        {
+            whileStmt->expr = expr.value();
+        }
+        else
+        {
+            if (peek_has_value()) {
+                addError(peek_value().info().value(), "Invalid expression in while block.");
+            }
+        }
+        tryConsume(Token::Kind::CloseParen, "Expected ) after while expression");
+        if (auto scope = parseScope())
+        {
+            whileStmt->scope = scope.value();
+        }
+        else
+        {
+            if (peek_has_value()) {
+                addError(peek_value().info().value(), "Invalid scope.");
+            }
+        }
+
+        *stmt = whileStmt;
+        return stmt;
     }
     // Return nothing which indicates an invalid statement
     return {};
@@ -302,7 +333,7 @@ std::optional<Node::Term*> Parser::parseTerm()
 
 std::optional<Node::Scope *> Parser::parseScope()
 {
-    if (!tryConsume(Token::Kind::OpenCurly, "Expected }"))
+    if (!tryConsume(Token::Kind::OpenCurly, "Expected { "))
     {
         return {};
     }

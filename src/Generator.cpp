@@ -33,7 +33,6 @@ std::string Generator::generateProgram()
         push("rax");
         output() << "\tcall ExitProcess\n";
 #endif
-
 #ifdef __linux__
         move("rax", "60");
         move("rdi", "0");
