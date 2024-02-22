@@ -1,5 +1,5 @@
 let x = (10 - 2 #* weird intra-line comment... *#* 3) / 2; # Equals 2!
-let x2 = 0; # I can comment stuff here - change this to 1 to execute the if(x2) block
+let x2 = 1; # I can comment stuff here - change this to 1 to execute the if(x2) block
 {
     let x3 = 20;
 }
@@ -14,7 +14,7 @@ if (x2) {
 }
 
 while (x2) {
-    x2 = x2 + 1;
+    x2 = x2 - 1;
 }
 #*
     Here is a multi line comment with
