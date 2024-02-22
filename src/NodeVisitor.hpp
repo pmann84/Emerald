@@ -226,6 +226,13 @@ public:
         generator().generateExpr(whileStatement->expr);
         // Pop the top of the stack (the result of the expr above) into rax
         generator().pop("rax");
+        const auto whileLabel = generator().createLabel();
+        const auto endLabel = generator().createLabel();
+        generator().writeLabel(whileLabel);
+        generator().compareAndJump("rax", "0", endLabel, "begin while");
+        generator().generateScope(whileStatement->scope);
+        generator().jumpToLabel(whileLabel);
+        generator().writeLabel(endLabel, "end of while block");
     }
 };
 
