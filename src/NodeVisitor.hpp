@@ -183,6 +183,8 @@ public:
     void operator()(const Node::Statement::Return* returnStatement)
     {
         generator().generate_expr(returnStatement->returnExpr);
+        // TODO: Think of a way to abstract this to assembly_builder
+        // this would involve moving the pop functionality out of here
 #ifdef __WIN64
         output() << "\tcall ExitProcess\n";
 #endif
@@ -215,7 +217,6 @@ public:
         output().write_label(endLabel, "end of if block");
     }
     void operator()(const Node::Statement::While* whileStatement) {
-        // TODO: Generate asm for while statement
         // Puts the result of the expr on the top of the stack
         generator().generate_expr(whileStatement->expr);
         // Pop the top of the stack (the result of the expr above) into rax
