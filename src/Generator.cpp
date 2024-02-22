@@ -113,6 +113,35 @@ void Generator::move(const std::string& dest, const std::string& src) {
     output() << "\tmov " << dest << ", " << src << "\n";
 }
 
+void Generator::writeLabel(const std::string& label, const std::string& comment)
+{
+    output() << label << ": ";
+    if (!comment.empty()) {
+       output() << " ; " << comment;
+    }
+    output() << "\n";
+}
+
+void Generator::jumpToLabel(const std::string& label, const std::string& comment)
+{
+    output() << "\tjmp " << label;
+    if (!comment.empty())
+    {
+        output() << " ; " << comment;
+    }
+    output() << "\n";
+}
+
+void Generator::compareAndJump(const std::string& cmp1, const std::string& cmp2, const std::string& label, const std::string& cmpComment)
+{
+    output() << "\tcmp " << cmp1 << ", " << cmp2;
+    if (!cmpComment.empty()) {
+        output() << " ; " << cmpComment;
+    }
+    output() << "\n";
+    output() << "\tje " << label << "\n";
+}
+
 std::vector<Variable> &Generator::variables()
 {
     return m_variables;
@@ -158,4 +187,3 @@ std::string Generator::createLabel()
     ss << "L" << m_labelIndex++;
     return ss.str();
 }
-

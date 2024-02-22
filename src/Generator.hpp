@@ -31,6 +31,9 @@ public:
     void push(const std::string& reg);
     void pop(const std::string& reg);
     void move(const std::string& dest, const std::string& src);
+    void writeLabel(const std::string& label, const std::string& comment = "");
+    void jumpToLabel(const std::string& label, const std::string& comment = "");
+    void compareAndJump(const std::string& cmp1, const std::string& cmp2, const std::string& label, const std::string& cmpComment = "");
     std::string createLabel();
 
     void beginScope();

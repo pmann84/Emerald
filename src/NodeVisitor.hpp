@@ -211,18 +211,21 @@ public:
         generator().pop("rax");
         const auto nextLabel = generator().createLabel();
         const auto endLabel = generator().createLabel();
-        output() << "\tcmp rax, 0" << "; begin if" << "\n";
-        output() << "\tje " << nextLabel << "\n";
+        generator().compareAndJump("rax", "0", nextLabel, "begin if");
         generator().generateScope(ifStatement->scope);
-        output() << "\tjmp " << endLabel << "; end if" << "\n";
-        output() << nextLabel << ":\n";
+        generator().jumpToLabel(endLabel, "end if");
+        generator().writeLabel(nextLabel);
         if (ifStatement->pred.has_value()) {
             generator().generateIfPredicate(ifStatement->pred.value(), endLabel);
         }
-        output() << endLabel << ": " << " ; end of if block" << "\n";
+        generator().writeLabel(endLabel, "end of if block");
     }
     void operator()(const Node::Statement::While* whileStatement) {
         // TODO: Generate asm for while statement
+        // Puts the result of the expr on the top of the stack
+        generator().generateExpr(whileStatement->expr);
+        // Pop the top of the stack (the result of the expr above) into rax
+        generator().pop("rax");
     }
 };
 
