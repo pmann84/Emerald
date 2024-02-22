@@ -60,12 +60,22 @@ git submodule update --init --recursive
 ```
 Then to configure and build use the provided CMake files in the root of the project.
 
-### Setting up for Windows
-I use CLion on Windows to develop this so far, but since I'm only supporting Linux you need to setup an appropriate Linux 
-environment to develop on. Do the following
-- Install a WSL instance (I use Ubuntu but whatever you like)
+### Setup on Windows
+I use CLion to develop this so far and have generally used the MinGW/MSVC toolchains. You need to make sure you have the following installed
+- MSVC SDK 2019 (specifically 14.29.30133)
+- CMake (if your IDE doesn't support it Out of the Box)
+- Nasm (install from the website - once installed just add it to your path)
+
+### Setup on Linux
+I use CLion to develop this so far. To setup your Linux environment do the following:
 - Setup your WSL instance for C++ development
   - C++ and tools `sudo apt-get install build-essential gdb`
   - CMake `sudo apt-get install cmake`
   - nasm `sudo apt install nasm`
-- Open CLion and create build configurations using the WSL toolchain (should auto-detect everything).
+- Update `gcc` and `g++` to a version that supports C++23 (I use gcc/++13), run the following (note the last command change the path `/home/linuxbrew/.linuxbrew/bin` to wherever your gcc/g++ symlinks are)
+  - `sudo add-apt-repository ppa:ubuntu-toolchain-r/test`
+  - `sudo apt-get install gcc-13 g++-13`
+  - `sudo update-alternatives --install /home/linuxbrew/.linuxbrew/bin/gcc gcc /usr/bin/gcc-13 60 --slave /home/linuxbrew/.linuxbrew/bin/g++ g++ /usr/bin/g++-13`
+
+> [!NOTE]
+> You can repeat the following steps on Windows usin WSL, just install a WSL instance (I use Ubuntu but whatever you like). Then use your IDE to set up a WSL toolchain (CLion does this out of the box - although you may need to check it finds the correct compiler version in the toolchain settings).
