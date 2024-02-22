@@ -15,7 +15,7 @@ public:
 
 protected:
     Generator& generator() { return m_generator; }
-    std::stringstream& output() { return m_generator.output(); }
+    assembly_builder& output() { return m_generator.output(); }
     std::vector<Variable>& variables() { return m_generator.variables(); }
     ErrorHandler& errors() { return m_generator.errors(); }
     std::vector<size_t>& scopes() { return m_generator.scopes(); }
@@ -55,12 +55,12 @@ public:
     }
     void operator()(const Node::IntLiteral* intLitExpr)
     {
-        output() << "\tmov rax, " << intLitExpr->intLit.value().value() << "\n";
+        output().move("rax", intLitExpr->intLit.value().value());
         generator().push("rax");
     }
     void operator()(const Node::TermParen* parenTerm)
     {
-        generator().generateExpr(parenTerm->expr);
+        generator().generate_expr(parenTerm->expr);
     }
 };
 
@@ -70,17 +70,17 @@ public:
     explicit ExprVisitor(Generator& generator): NodeVisitor(generator) {}
     void operator()(const Node::Term* term)
     {
-        generator().generateTerm(term);
+        generator().generate_term(term);
     }
     void operator()(const Node::BinExpr* binExpr)
     {
-        generator().generateBinExp(binExpr);
+        generator().generate_bin_exp(binExpr);
     }
     void operator()(const Node::RelExpr* relExpr) {
-        generator().generateRelExp(relExpr);
+        generator().generate_rel_exp(relExpr);
     }
     void operator()(const Node::EqlExpr* eqlExpr) {
-        generator().generateEqlExp(eqlExpr);
+        generator().generate_eql_exp(eqlExpr);
     }
 };
 
@@ -91,45 +91,45 @@ public:
     void operator()(const Node::BinaryExpr::Add* add)
     {
         // This pushes both onto the stop of the stack
-        generator().generateExpr(add->rhs);
-        generator().generateExpr(add->lhs);
+        generator().generate_expr(add->rhs);
+        generator().generate_expr(add->lhs);
 
         generator().pop("rax");
         generator().pop("rbx");
-        output() << "\tadd rax, rbx\n";
+        output().add("rax", "rbx");
         generator().push("rax");
     }
     void operator()(const Node::BinaryExpr::Multiply* mult)
     {
         // This pushes both onto the stop of the stack
-        generator().generateExpr(mult->rhs);
-        generator().generateExpr(mult->lhs);
+        generator().generate_expr(mult->rhs);
+        generator().generate_expr(mult->lhs);
 
         generator().pop("rax");
         generator().pop("rbx");
-        output() << "\tmul rbx\n";
+        output().mul("rbx");
         generator().push("rax");
     }
     void operator()(const Node::BinaryExpr::Minus* minus)
     {
         // This pushes both onto the stop of the stack
         // Need to do RHS first otherwise we are minus-ing in the wrong order (associativity and all that)
-        generator().generateExpr(minus->rhs);
-        generator().generateExpr(minus->lhs);
+        generator().generate_expr(minus->rhs);
+        generator().generate_expr(minus->lhs);
         generator().pop("rax");
         generator().pop("rbx");
-        output() << "\tsub rax, rbx\n";
+        output().sub("rax", "rbx");
         generator().push("rax");
     }
     void operator()(const Node::BinaryExpr::Divide* div)
     {
         // This pushes both onto the stop of the stack
-        generator().generateExpr(div->rhs);
-        generator().generateExpr(div->lhs);
+        generator().generate_expr(div->rhs);
+        generator().generate_expr(div->lhs);
 
         generator().pop("rax");
         generator().pop("rbx");
-        output() << "\tdiv rbx\n";
+        output().div("rbx");
         generator().push("rax");
     }
 };
@@ -163,7 +163,7 @@ public:
             errors() << error;
         } else {
             variables().push_back({ .name = letStatement->identifier.value().value(), .stackPosition = generator().stackLocation() });
-            generator().generateExpr(letStatement->letExpr); // This inserts the variable onto the stack
+            generator().generate_expr(letStatement->letExpr); // This inserts the variable onto the stack
         }
     }
     void operator()(const Node::Statement::Assign* assignStatement) {
@@ -178,61 +178,61 @@ public:
             const auto error = makeError(assignStatement->identifier.info().value(), errorSs.str());
             errors() << error;
         } else {
-            generator().generateExpr(assignStatement->assignExpr); // This evaluates the expression and inserts the variable onto the stack
+            generator().generate_expr(assignStatement->assignExpr); // This evaluates the expression and inserts the variable onto the stack
             generator().pop("rax");
 
             const auto identLocation = it->stackPosition;
             const auto offset = generator().stackLocation() - identLocation - 1;
-            generator().move("[rsp + " + std::to_string(offset * 8) + "]", "rax");
+            output().move("[rsp + " + std::to_string(offset * 8) + "]", "rax");
         }
     }
     void operator()(const Node::Statement::Return* returnStatement)
     {
-        generator().generateExpr(returnStatement->returnExpr);
+        generator().generate_expr(returnStatement->returnExpr);
 #ifdef __WIN64
         output() << "\tcall ExitProcess\n";
 #endif
 
 #ifdef __linux__
-        generator().move("rax", "60");
+        output().move("rax", "60");
         generator().pop("rdi");
-        output() << "\tsyscall\n";
+        output().syscall();
 #endif
     }
     void operator()(const Node::Scope* statementScope)
     {
-        generator().generateScope(statementScope);
+        generator().generate_scope(statementScope);
     }
     void operator()(const Node::Statement::If* ifStatement)
     {
         // Puts the result of the expr on the top of the stack
-        generator().generateExpr(ifStatement->expr);
+        generator().generate_expr(ifStatement->expr);
         // Pop the top of the stack (the result of the expr above) into rax
         generator().pop("rax");
-        const auto nextLabel = generator().createLabel();
-        const auto endLabel = generator().createLabel();
-        generator().compareAndJump("rax", "0", nextLabel, "begin if");
-        generator().generateScope(ifStatement->scope);
-        generator().jumpToLabel(endLabel, "end if");
-        generator().writeLabel(nextLabel);
+        const auto nextLabel = generator().next_label();
+        const auto endLabel = generator().next_label();
+        output().compare_and_jump("rax", "0", nextLabel, "begin if");
+        generator().generate_scope(ifStatement->scope);
+        output().jump_to_label(endLabel, "end if");
+        output().write_label(nextLabel);
         if (ifStatement->pred.has_value()) {
-            generator().generateIfPredicate(ifStatement->pred.value(), endLabel);
+            generator().generate_if_predicate(ifStatement->pred.value(), endLabel);
         }
-        generator().writeLabel(endLabel, "end of if block");
+        output().write_label(endLabel, "end of if block");
     }
     void operator()(const Node::Statement::While* whileStatement) {
         // TODO: Generate asm for while statement
         // Puts the result of the expr on the top of the stack
-        generator().generateExpr(whileStatement->expr);
+        generator().generate_expr(whileStatement->expr);
         // Pop the top of the stack (the result of the expr above) into rax
         generator().pop("rax");
-        const auto whileLabel = generator().createLabel();
-        const auto endLabel = generator().createLabel();
-        generator().writeLabel(whileLabel);
-        generator().compareAndJump("rax", "0", endLabel, "begin while");
-        generator().generateScope(whileStatement->scope);
-        generator().jumpToLabel(whileLabel);
-        generator().writeLabel(endLabel, "end of while block");
+        const auto whileLabel = generator().next_label();
+        const auto endLabel = generator().next_label();
+        output().write_label(whileLabel);
+        output().compare_and_jump("rax", "0", endLabel, "begin while");
+        generator().generate_scope(whileStatement->scope);
+        output().jump_to_label(whileLabel);
+        output().write_label(endLabel, "end of while block");
     }
 };
 
@@ -246,22 +246,21 @@ public:
 
     void operator()(const Node::Statement::ElseIf* elseIfStatement) {
         // Puts the result of the expr on the top of the stack
-        generator().generateExpr(elseIfStatement->expr);
+        generator().generate_expr(elseIfStatement->expr);
         // Pop the top of the stack (the result of the expr above) into rax
         generator().pop("rax");
-        const auto nextLabel = generator().createLabel();
-        output() << "\tcmp rax, 0 " << "; begin else if" << "\n";
-        output() << "\tje " << nextLabel << "\n";
-        generator().generateScope(elseIfStatement->scope);
-        output() << "\tjmp " << m_endLabel << "; end else if" << "\n";
-        output() << nextLabel << ":\n";
+        const auto nextLabel = generator().next_label();
+        output().compare_and_jump("rax", "0", nextLabel, "begin else if");
+        generator().generate_scope(elseIfStatement->scope);
+        output().jump_to_label(m_endLabel, "end else if");
+        output().write_label(nextLabel);
         if (elseIfStatement->pred.has_value()) {
-            generator().generateIfPredicate(elseIfStatement->pred.value(), m_endLabel);
+            generator().generate_if_predicate(elseIfStatement->pred.value(), m_endLabel);
         }
     }
     void operator()(const Node::Statement::Else* elseStatement) {
-        output() << "\t; begin else\n";
-        generator().generateScope(elseStatement->scope);
+        output().write_comment_and_end_line("begin else");
+        generator().generate_scope(elseStatement->scope);
     }
 
 private:

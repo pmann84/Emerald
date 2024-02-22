@@ -12,134 +12,85 @@ std::string Generator::generateProgram()
 {
     // This section is required on windows compilations
     // but not on linux, we can probably make this better
-    output() << "global start\n\n";
-
-#ifdef __WIN64
-    output() << "section .text\n\n";
-    output() << "extern ExitProcess\n\n";
-#endif
-
-    output() << "start:\n";
+    output().write_header();
 
     if (!m_root.statements.empty()) {
         for (const auto statement: m_root.statements) {
-            generateStatement(statement);
+            generate_statement(statement);
         }
     }
     else {
         // TODO: Consider whether this needs to be done all the time or not as a fallback?
-#ifdef __WIN64
-        move("rax", "0");
-        push("rax");
-        output() << "\tcall ExitProcess\n";
-#endif
-#ifdef __linux__
-        move("rax", "60");
-        move("rdi", "0");
-        output() << "\tsyscall\n";
-#endif
+        output().empty_program();
     }
     return output().str();
 }
 
-void Generator::generateStatement(const Node::Stmt* statement)
+void Generator::generate_statement(const Node::Stmt* statement)
 {
     StatementVisitor statementVisitor(*this);
     std::visit(statementVisitor, *statement);
 }
 
-void Generator::generateExpr(const Node::Expr* expr)
+void Generator::generate_expr(const Node::Expr* expr)
 {
     ExprVisitor exprVisitor(*this);
     std::visit(exprVisitor, expr->expr);
 }
 
-void Generator::generateBinExp(const Node::BinExpr *binExpr)
+void Generator::generate_bin_exp(const Node::BinExpr *binExpr)
 {
     BinExprVisitor binExprVisitor(*this);
     std::visit(binExprVisitor, *binExpr);
 }
 
-void Generator::generateRelExp(const Node::RelExpr *relExpr) {
+void Generator::generate_rel_exp(const Node::RelExpr *relExpr) {
     RelExprVisitor relExprVisitor(*this);
     std::visit(relExprVisitor, *relExpr);
 }
 
-void Generator::generateEqlExp(const Node::EqlExpr *eqlExpr) {
+void Generator::generate_eql_exp(const Node::EqlExpr *eqlExpr) {
     EqlExprVisitor eqlExprVisitor(*this);
     std::visit(eqlExprVisitor, *eqlExpr);
 }
 
-void Generator::generateTerm(const Node::Term *term)
+void Generator::generate_term(const Node::Term *term)
 {
     TermVisitor termVisitor(*this);
     std::visit(termVisitor, *term);
 }
 
-void Generator::generateScope(const Node::Scope *scope)
+void Generator::generate_scope(const Node::Scope *scope)
 {
     if (scope) {
-        beginScope();
+        begin_scope();
         for (const auto *stmt: scope->statements) {
-            generateStatement(stmt);
+            generate_statement(stmt);
         }
-        endScope();
+        end_scope();
     }
 }
 
-void Generator::generateIfPredicate(const Node::IfPredicate *ifPredicate, const std::string& endLabel) {
+void Generator::generate_if_predicate(const Node::IfPredicate *ifPredicate, const std::string& endLabel) {
     IfPredicateVisitor ifPredicateVisitor(*this, endLabel);
     std::visit(ifPredicateVisitor, *ifPredicate);
 }
 
-std::stringstream &Generator::output()
+assembly_builder& Generator::output()
 {
-    return m_outputStream;
+    return m_builder;
 }
 
 void Generator::push(const std::string& reg)
 {
-    output() << "\tpush " << reg << "\n";
+    output().push(reg);
     m_stackLocation++;
 }
 
 void Generator::pop(const std::string& reg)
 {
-    output() << "\tpop " << reg << "\n";
+    output().pop(reg);
     m_stackLocation--;
-}
-
-void Generator::move(const std::string& dest, const std::string& src) {
-    output() << "\tmov " << dest << ", " << src << "\n";
-}
-
-void Generator::writeLabel(const std::string& label, const std::string& comment)
-{
-    output() << label << ": ";
-    if (!comment.empty()) {
-       output() << " ; " << comment;
-    }
-    output() << "\n";
-}
-
-void Generator::jumpToLabel(const std::string& label, const std::string& comment)
-{
-    output() << "\tjmp " << label;
-    if (!comment.empty())
-    {
-        output() << " ; " << comment;
-    }
-    output() << "\n";
-}
-
-void Generator::compareAndJump(const std::string& cmp1, const std::string& cmp2, const std::string& label, const std::string& cmpComment)
-{
-    output() << "\tcmp " << cmp1 << ", " << cmp2;
-    if (!cmpComment.empty()) {
-        output() << " ; " << cmpComment;
-    }
-    output() << "\n";
-    output() << "\tje " << label << "\n";
 }
 
 std::vector<Variable> &Generator::variables()
@@ -162,16 +113,16 @@ ErrorHandler &Generator::errors()
     return m_errorHandler;
 }
 
-void Generator::beginScope()
+void Generator::begin_scope()
 {
     m_scopes.push_back(m_variables.size());
 }
 
-void Generator::endScope()
+void Generator::end_scope()
 {
     size_t popCount = m_variables.size() - m_scopes.back();
     // stack grows from the top to adding is popping off!
-    m_outputStream << "\tadd rsp, " << popCount * 8 << "\n";
+    output().add("rsp", popCount * 8);
     m_stackLocation -= popCount;
 //    m_variables = std::vector<Variable>(m_variables.begin(), m_variables.begin() + popCount);
     for (auto i = 0; i < popCount; ++i)
@@ -181,9 +132,7 @@ void Generator::endScope()
     m_scopes.pop_back();
 }
 
-std::string Generator::createLabel()
+std::string Generator::next_label()
 {
-    std::stringstream ss;
-    ss << "L" << m_labelIndex++;
-    return ss.str();
+    return m_labels.next();
 }

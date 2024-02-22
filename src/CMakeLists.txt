@@ -15,6 +15,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     linux_linker.hpp linux_linker.cpp
     windows_linker.hpp windows_linker.cpp
     rules.hpp
+    label_manager.hpp
+    assembly_builder.hpp
 )
 
 target_link_libraries(${PROJECT_NAME}
