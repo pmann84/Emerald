@@ -23,7 +23,7 @@ void Assembler::generate(const std::string& asmStr)
     switch (m_format)
     {
         case AsmFormat::Elf:
-            assembleCmd << "-felf64";
+            assembleCmd << "-felf64 --prefix _";
             break;
         case AsmFormat::Win:
             assembleCmd << "-fwin64";

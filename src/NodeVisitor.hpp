@@ -189,9 +189,15 @@ public:
     void operator()(const Node::Statement::Return* returnStatement)
     {
         generator().generateExpr(returnStatement->returnExpr);
-        output() << "\tmov rax, 60\n";
+#ifdef __WIN64
+        output() << "\tcall ExitProcess\n";
+#endif
+
+#ifdef __linux__
+        generator().move("rax", "60");
         generator().pop("rdi");
         output() << "\tsyscall\n";
+#endif
     }
     void operator()(const Node::Scope* statementScope)
     {

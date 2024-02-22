@@ -10,7 +10,7 @@ windows_linker::windows_linker(const std::string& out_name) : m_out_name(out_nam
 void windows_linker::link()
 {
     std::stringstream linkCmd;
-    linkCmd << "\"" << m_linker_path << "\" " << m_out_name << ".obj /OUT:" << m_out_name << ".exe /SUBSYSTEM:CONSOLE /ENTRY:start";
+    linkCmd << "\"" << m_linker_path << "\" " << m_out_name << ".obj /OUT:" << m_out_name << ".exe /SUBSYSTEM:CONSOLE /ENTRY:start /DEFAULTLIB:Kernel32.lib";
     std::cout << linkCmd.str() << std::endl;
     std::system(linkCmd.str().c_str());
 }

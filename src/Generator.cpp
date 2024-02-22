@@ -12,8 +12,14 @@ std::string Generator::generateProgram()
 {
     // This section is required on windows compilations
     // but not on linux, we can probably make this better
+    output() << "global start\n\n";
+
+#ifdef __WIN64
     output() << "section .text\n\n";
-    output() << "global start\n\nstart:\n";
+    output() << "extern ExitProcess\n\n";
+#endif
+
+    output() << "start:\n";
 
     if (!m_root.statements.empty()) {
         for (const auto statement: m_root.statements) {
@@ -22,10 +28,17 @@ std::string Generator::generateProgram()
     }
     else {
         // TODO: Consider whether this needs to be done all the time or not as a fallback?
-        // Handle empty program
-        output() << "\tmov rax, 60\n";
-        output() << "\tmov rdi, 0\n";
+#ifdef __WIN64
+        move("rax", "0");
+        push("rax");
+        output() << "\tcall ExitProcess\n";
+#endif
+
+#ifdef __linux__
+        move("rax", "60");
+        move("rdi", "0");
         output() << "\tsyscall\n";
+#endif
     }
     return output().str();
 }
