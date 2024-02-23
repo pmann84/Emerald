@@ -8,7 +8,7 @@ this. The main part of this is the Emerald compiler. This may expand to include 
 Support for features is slow as this is an educational project. You can see the language grammar in the [`docs` folder of this repo](docs/Grammar.md). Currently, Emerald supports the following programming constructs:
 - Single and Multiline comments (using `#` and `#*...*#` respectively)
 - Integer data types ONLY
-- Variable assignment and reassignment (assignment using `let`)
+- variable assignment and reassignment (assignment using `let`)
 - Basic mathematical expressions using `+`, `-`, `*`, `/`
 - If/else-if/else statements (`if (...) {} else if (...) {} else {}`)
 
@@ -19,7 +19,7 @@ Support for features is slow as this is an educational project. You can see the 
 ### Up-and-Coming Features
 - For loop
 - Basic Functions
-- Variable assignment in if/while expression (`if (let a = ...) {}` etc)
+- variable assignment in if/while expression (`if (let a = ...) {}` etc)
 - External code
 - and more...
 

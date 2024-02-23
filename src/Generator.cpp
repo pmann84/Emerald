@@ -93,7 +93,7 @@ void Generator::pop(const std::string& reg)
     m_stackLocation--;
 }
 
-std::vector<Variable> &Generator::variables()
+std::vector<variable> &Generator::variables()
 {
     return m_variables;
 }

@@ -3,20 +3,20 @@
 #include "Parser.hpp"
 #include "Nodes.hpp"
 
-Parser::Parser(std::vector<Token> tokens, ErrorHandler& errorHandler) :
-    m_tokens(std::move(tokens)),
-    m_allocator(1024 * 1024 * 4),
-    m_errorHandler(errorHandler)
+Parser::Parser(std::vector<Token> tokens, ErrorHandler& error_handler) :
+        m_tokens(std::move(tokens)),
+        m_allocator(1024 * 1024 * 4),
+        m_error_handler(error_handler)
 {
 }
 
 std::optional<Token> Parser::peek(int64_t offset) const
 {
-    if (m_tokenPos + offset >= m_tokens.size())
+    if (m_token_pos + offset >= m_tokens.size())
     {
         return {};
     }
-    return m_tokens.at(m_tokenPos + offset);
+    return m_tokens.at(m_token_pos + offset);
 }
 
 Token Parser::peek_value(int64_t offset) const
@@ -46,13 +46,13 @@ bool Parser::peek_for_rule(std::vector<Token::Kind> rule) const
 
 Token Parser::consume()
 {
-    if (m_tokenPos < m_tokens.size()) {
-        return m_tokens.at(m_tokenPos++);
+    if (m_token_pos < m_tokens.size()) {
+        return m_tokens.at(m_token_pos++);
     }
     return Token(Token::Kind::Unexpected, {}, {});
 }
 
-std::optional<Token> Parser::tryConsume(Token::Kind tType)
+std::optional<Token> Parser::try_consume(Token::Kind tType)
 {
     if (peek_has_value() && peek_value().kind() == tType)
     {
@@ -61,27 +61,27 @@ std::optional<Token> Parser::tryConsume(Token::Kind tType)
     return {};
 }
 
-std::optional<Token> Parser::tryConsume(const std::vector<Token::Kind>& tTypes, const std::string& error) {
+std::optional<Token> Parser::try_consume(const std::vector<Token::Kind>& tTypes, const std::string& error) {
     std::optional<Token> token;
     for(const auto t : tTypes) {
-        token = tryConsume(t);
+        token = try_consume(t);
     }
     if (!token.has_value())
     {
         if (peek_has_value(-1)) {
-            add_error(peek_value(-1).info().value(), error);
+            add_error(peek_value(-1), error);
         }
     }
     return token;
 }
 
-std::optional<Token> Parser::tryConsume(Token::Kind tType, const std::string& error)
+std::optional<Token> Parser::try_consume(Token::Kind tType, const std::string& error)
 {
-    auto token = tryConsume(tType);
+    auto token = try_consume(tType);
     if (!token.has_value())
     {
         if (peek_has_value(-1)) {
-            add_error(peek_value(-1).info().value(), error);
+            add_error(peek_value(-1), error);
         }
     }
     return token;
@@ -92,22 +92,22 @@ Node::Program Parser::parse()
     Node::Program program;
     while (peek_has_value())
     {
-        if (!tryConsume(Token::Kind::Comment)) {
-            if (auto statement = parseStatement()) {
+        if (!try_consume(Token::Kind::Comment)) {
+            if (auto statement = parse_statement()) {
                 program.statements.push_back(statement.value());
             } else {
-                add_error(peek_value().info().value(), "Invalid statement.");
+                add_error(peek_value(), "Invalid statement.");
             }
         }
     }
 
-    m_tokenPos = 0;
+    m_token_pos = 0;
     return program;
 }
 
-std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
+std::optional<Node::Expr*> Parser::parse_expr(int min_precedence)
 {
-    auto termLhs = parseTerm();
+    auto termLhs = parse_term();
     if (!termLhs.has_value())
     {
         return {};
@@ -116,86 +116,199 @@ std::optional<Node::Expr*> Parser::parseExpr(int minPrecedence)
     auto exprLhs = m_allocator.alloc<Node::Expr>();
     exprLhs->expr = termLhs.value();
 
+    // TODO: This function needs logic adding to handle equality and relational operators
+//    if (currentToken.value().is_relational_operator()) {
+//        Token op = consume();
+//        auto expr = m_allocator.alloc<Node::RelExpr>();
+//        auto nodeLhsExpr = m_allocator.alloc<Node::Expr>();
+//        const auto nextToken = peek();
+//        switch (op.kind()) {
+//            case Token::Kind::LessThan:
+//                if (nextToken.has_value() && nextToken.value().kind() == Token::Kind::Equals) {
+//                    consume();
+//                    // TODO: <=
+//                    auto leqNode = m_allocator.alloc<Node::RelationalExpr::LessThanEqual>();
+//                    auto exprRhs = parse_expr();
+//                    if (!exprRhs.has_value())
+//                    {
+//                        add_error(peek_value(), "Unable to parse expression");
+//                    }
+//                    nodeLhsExpr->expr = exprLhs->expr;
+//                    leqNode->lhs = nodeLhsExpr;
+//                    leqNode->rhs = exprRhs.value();
+//                    *expr = leqNode;
+//                } else {
+//                    // TODO: <
+//                    auto ltNode = m_allocator.alloc<Node::RelationalExpr::LessThan>();
+//                    auto exprRhs = parse_expr();
+//                    if (!exprRhs.has_value())
+//                    {
+//                        add_error(peek_value(), "Unable to parse expression");
+//                    }
+//                    nodeLhsExpr->expr = exprLhs->expr;
+//                    ltNode->lhs = nodeLhsExpr;
+//                    ltNode->rhs = exprRhs.value();
+//                    *expr = ltNode;
+//                }
+//                break;
+//            case Token::Kind::GreaterThan:
+//                if (nextToken.has_value() && nextToken.value().kind() == Token::Kind::Equals) {
+//                    consume();
+//                    // TODO: >=
+//                    auto geqNode = m_allocator.alloc<Node::RelationalExpr::GreaterThanEqual>();
+//                    auto exprRhs = parse_expr();
+//                    if (!exprRhs.has_value())
+//                    {
+//                        add_error(peek_value(), "Unable to parse expression");
+//                    }
+//                    nodeLhsExpr->expr = exprLhs->expr;
+//                    geqNode->lhs = nodeLhsExpr;
+//                    geqNode->rhs = exprRhs.value();
+//                    *expr = geqNode;
+//                } else {
+//                    // TODO: >
+//                    auto gtNode = m_allocator.alloc<Node::RelationalExpr::GreaterThan>();
+//                    auto exprRhs = parse_expr();
+//                    if (!exprRhs.has_value())
+//                    {
+//                        add_error(peek_value(), "Unable to parse expression");
+//                    }
+//                    nodeLhsExpr->expr = exprLhs->expr;
+//                    gtNode->lhs = nodeLhsExpr;
+//                    gtNode->rhs = exprRhs.value();
+//                    *expr = gtNode;
+//                }
+//                break;
+//            default:
+//                add_error(op, "Invalid relational operator ", op.value().value());
+//        }
+//        exprLhs->expr = expr;
+//    } else if (currentToken.value().is_equality_operator()) {
+//        auto expr = m_allocator.alloc<Node::EqlExpr>();
+//        auto nodeLhsExpr = m_allocator.alloc<Node::Expr>();
+//        Token op = consume();
+//        const auto nextToken = peek();
+//        switch (op.kind())
+//        {
+//            case Token::Kind::Exclamation:
+//                if (nextToken.has_value() && nextToken.value().kind() == Token::Kind::Equals)
+//                {
+//                    consume();
+//                    // TODO: !=
+//                    auto neqNode = m_allocator.alloc<Node::EqualityExpr::NotEqual>();
+//                    auto exprRhs = parse_expr();
+//                    if (!exprRhs.has_value())
+//                    {
+//                        add_error(peek_value(), "Unable to parse expression");
+//                    }
+//                    nodeLhsExpr->expr = exprLhs->expr;
+//                    neqNode->lhs = nodeLhsExpr;
+//                    neqNode->rhs = exprRhs.value();
+//                    *expr = neqNode;
+//                } else
+//                {
+//                    add_error(op, "Invalid equality operator ", op.value().value(),
+//                              nextToken.value().value().value());
+//                }
+//                break;
+//            case Token::Kind::Equals:
+//                if (nextToken.has_value() && nextToken.value().kind() == Token::Kind::Equals)
+//                {
+//                    consume();
+//                    // TODO: ==
+//                    auto eqNode = m_allocator.alloc<Node::EqualityExpr::Equal>();
+//                    auto exprRhs = parse_expr();
+//                    if (!exprRhs.has_value())
+//                    {
+//                        add_error(peek_value(), "Unable to parse expression");
+//                    }
+//                    nodeLhsExpr->expr = exprLhs->expr;
+//                    eqNode->lhs = nodeLhsExpr;
+//                    eqNode->rhs = exprRhs.value();
+//                    *expr = eqNode;
+//                } else
+//                {
+//                    add_error(op, "Invalid equality operator ", op.value().value(),
+//                              nextToken.value().value().value());
+//                }
+//                break;
+//            default:
+//                add_error(op, "Invalid equality operator ", op.value().value());
+//        }
+//        exprLhs->expr = expr;
+//    }
     while(true)
     {
         std::optional<Token> currentToken = peek();
-        std::optional<uint8_t> precedence;
-        if (currentToken.has_value())
-        {
-            precedence = binaryPrecedence(currentToken->kind());
-            if (!precedence.has_value() || precedence.value() < minPrecedence) {
-                break;
-            }
-        }
-        else
-        {
+        // Empty token - break out
+        if (!currentToken.has_value()) break;
+
+        // Check for the operators binary precedence
+        std::optional<uint8_t> precedence = binaryPrecedence(currentToken->kind());
+        if (!precedence.has_value() || precedence.value() < min_precedence) {
             break;
-        }
-        Token op = consume();
-        auto nextMinPrecedence = precedence.value() + 1;
-        auto exprRhs = parseExpr(nextMinPrecedence);
-        if (!exprRhs.has_value())
-        {
-            add_error(peek_value().info().value(), "Unable to parse expression");
-        }
-        else
-        {
-            auto expr = m_allocator.alloc<Node::BinExpr>();
-            auto nodeLhsExpr = m_allocator.alloc<Node::Expr>();
-            if (op.kind() == Token::Kind::Plus)
+        } else {
+            Token op = consume();
+            auto nextMinPrecedence = precedence.value() + 1;
+            auto exprRhs = parse_expr(nextMinPrecedence);
+            if (!exprRhs.has_value())
             {
-                auto addNode = m_allocator.alloc<Node::BinaryExpr::Add>();
-                nodeLhsExpr->expr = exprLhs->expr;
-                addNode->lhs = nodeLhsExpr;
-                addNode->rhs = exprRhs.value();
-                *expr = addNode;
-            }
-            else if (op.kind() == Token::Kind::Asterisk)
+                add_error(peek_value(), "Unable to parse expression");
+            } else
             {
-                auto multNode = m_allocator.alloc<Node::BinaryExpr::Multiply>();
-                nodeLhsExpr->expr = exprLhs->expr;
-                multNode->lhs = nodeLhsExpr;
-                multNode->rhs = exprRhs.value();
-                *expr = multNode;
+                auto expr = m_allocator.alloc<Node::BinExpr>();
+                auto nodeLhsExpr = m_allocator.alloc<Node::Expr>();
+                if (op.kind() == Token::Kind::Plus)
+                {
+                    auto addNode = m_allocator.alloc<Node::BinaryExpr::Add>();
+                    nodeLhsExpr->expr = exprLhs->expr;
+                    addNode->lhs = nodeLhsExpr;
+                    addNode->rhs = exprRhs.value();
+                    *expr = addNode;
+                } else if (op.kind() == Token::Kind::Asterisk)
+                {
+                    auto multNode = m_allocator.alloc<Node::BinaryExpr::Multiply>();
+                    nodeLhsExpr->expr = exprLhs->expr;
+                    multNode->lhs = nodeLhsExpr;
+                    multNode->rhs = exprRhs.value();
+                    *expr = multNode;
+                } else if (op.kind() == Token::Kind::Minus)
+                {
+                    auto minusNode = m_allocator.alloc<Node::BinaryExpr::Minus>();
+                    nodeLhsExpr->expr = exprLhs->expr;
+                    minusNode->lhs = nodeLhsExpr;
+                    minusNode->rhs = exprRhs.value();
+                    *expr = minusNode;
+                } else if (op.kind() == Token::Kind::ForwardSlash)
+                {
+                    auto divNode = m_allocator.alloc<Node::BinaryExpr::Divide>();
+                    nodeLhsExpr->expr = exprLhs->expr;
+                    divNode->lhs = nodeLhsExpr;
+                    divNode->rhs = exprRhs.value();
+                    *expr = divNode;
+                } else
+                {
+                    add_error(op, "Unrecognised binary operator ", op.value().value());
+                }
+                exprLhs->expr = expr;
             }
-            else if (op.kind() == Token::Kind::Minus)
-            {
-                auto minusNode = m_allocator.alloc<Node::BinaryExpr::Minus>();
-                nodeLhsExpr->expr = exprLhs->expr;
-                minusNode->lhs = nodeLhsExpr;
-                minusNode->rhs = exprRhs.value();
-                *expr = minusNode;
-            }
-            else if (op.kind() == Token::Kind::ForwardSlash)
-            {
-                auto divNode = m_allocator.alloc<Node::BinaryExpr::Divide>();
-                nodeLhsExpr->expr = exprLhs->expr;
-                divNode->lhs = nodeLhsExpr;
-                divNode->rhs = exprRhs.value();
-                *expr = divNode;
-            }
-            else
-            {
-                assert(false);
-            }
-            exprLhs->expr = expr;
         }
     }
     return exprLhs;
 }
 
-std::optional<Node::Stmt*> Parser::parseStatement()
+std::optional<Node::Stmt*> Parser::parse_statement()
 {
     auto stmt = m_allocator.alloc<Node::Stmt>();
-    if (tryConsume(Token::Kind::Return)) {
+    if (try_consume(Token::Kind::Return)) {
         auto nodeReturn = m_allocator.alloc<Node::Statement::Return>();
-        if (auto nodeExpr = parseExpr()) {
+        if (auto nodeExpr = parse_expr()) {
             nodeReturn->returnExpr = nodeExpr.value();
         } else {
-            add_error(peek_value().info().value(), "Invalid expression after return.");
+            add_error(peek_value(), "Invalid expression after return.");
         }
 
-        tryConsume(Token::Kind::SemiColon, "Expected ; after expression.");
+        try_consume(Token::Kind::SemiColon, "Expected ; after expression.");
         *stmt = nodeReturn;
         return stmt;
     } else if (peek_for_rule(emerald_grammar_rules.at("variable_assign"))) {
@@ -203,89 +316,89 @@ std::optional<Node::Stmt*> Parser::parseStatement()
         auto letStatement = m_allocator.alloc<Node::Statement::Let>();
         letStatement->identifier = consume();
         consume(); // consume equals
-        if (auto expr = parseExpr()) {
+        if (auto expr = parse_expr()) {
             letStatement->letExpr = expr.value();
         } else {
-            add_error(peek_value().info().value(), "Invalid expression in variable definition.");
+            add_error(peek_value(), "Invalid expression in variable definition.");
         }
 
-        tryConsume(Token::Kind::SemiColon, "Expected ; after expression.");
+        try_consume(Token::Kind::SemiColon, "Expected ; after expression.");
         *stmt = letStatement;
         return stmt;
     } else if(peek_for_rule(emerald_grammar_rules.at("variable_reassign"))) {
         auto assignStatement = m_allocator.alloc<Node::Statement::Assign>();
         assignStatement->identifier = consume();
         consume(); // consume equals
-        if (auto expr = parseExpr()) {
+        if (auto expr = parse_expr()) {
             assignStatement->assignExpr = expr.value();
         } else {
-            add_error(peek_value().info().value(), "Invalid expression in variable assignment.");
+            add_error(peek_value(), "Invalid expression in variable assignment.");
         }
 
-        tryConsume(Token::Kind::SemiColon, "Expected ; after expression.");
+        try_consume(Token::Kind::SemiColon, "Expected ; after expression.");
         *stmt = assignStatement;
         return stmt;
     } else if (peek_for_kind(Token::Kind::OpenCurly)) {
-        if (auto scope = parseScope()) {
+        if (auto scope = parse_scope()) {
             *stmt = scope.value();
             return stmt;
         }
         else
         {
-            add_error(peek_value().info().value(), "Invalid scope.");
+            add_error(peek_value(), "Invalid scope.");
         }
     }
-    else if (auto ifStatement = tryConsume(Token::Kind::If))
+    else if (auto ifStatement = try_consume(Token::Kind::If))
     {
-        tryConsume(Token::Kind::OpenParen, "Expected ( after if");
+        try_consume(Token::Kind::OpenParen, "Expected ( after if");
         auto ifStmt = m_allocator.alloc<Node::Statement::If>();
-        if (auto expr = parseExpr())
+        if (auto expr = parse_expr())
         {
             ifStmt->expr = expr.value();
         }
         else
         {
             if (peek_has_value()) {
-                add_error(peek_value().info().value(), "Invalid scope in if block.");
+                add_error(peek_value(), "Invalid scope in if block.");
             }
         }
-        tryConsume(Token::Kind::CloseParen, "Expected ) after if expression");
-        if (auto scope = parseScope())
+        try_consume(Token::Kind::CloseParen, "Expected ) after if expression");
+        if (auto scope = parse_scope())
         {
             ifStmt->scope = scope.value();
         }
         else
         {
             if (peek_has_value()) {
-                add_error(peek_value().info().value(), "Invalid scope.");
+                add_error(peek_value(), "Invalid scope.");
             }
         }
-        ifStmt->pred = parseIfPredicate();
+        ifStmt->pred = parse_if_predicate();
 
         *stmt = ifStmt;
         return stmt;
-    } else if (auto whileStatement = tryConsume(Token::Kind::While)) {
-        tryConsume(Token::Kind::OpenParen, "Expected ( after while declaration");
+    } else if (auto whileStatement = try_consume(Token::Kind::While)) {
+        try_consume(Token::Kind::OpenParen, "Expected ( after while declaration");
         auto whileStmt = m_allocator.alloc<Node::Statement::While>();
-        if (auto expr = parseExpr())
+        if (auto expr = parse_expr())
         {
             whileStmt->expr = expr.value();
         }
         else
         {
             if (peek_has_value()) {
-                add_error(peek_value().info().value(), "Invalid expression in while block.");
+                add_error(peek_value(), "Invalid expression in while block.");
             }
         }
-        tryConsume(Token::Kind::CloseParen, "Expected ) after while expression");
-        if (auto scope = parseScope())
+        try_consume(Token::Kind::CloseParen, "Expected ) after while expression");
+        if (auto scope = parse_scope())
         {
             whileStmt->scope = scope.value();
         }
         else
         {
             if (peek_has_value()) {
-                add_error(peek_value().info().value(), "Invalid scope.");
+                add_error(peek_value(), "Invalid scope.");
             }
         }
 
@@ -296,9 +409,9 @@ std::optional<Node::Stmt*> Parser::parseStatement()
     return {};
 }
 
-std::optional<Node::Term*> Parser::parseTerm()
+std::optional<Node::Term*> Parser::parse_term()
 {
-    if (auto intLit = tryConsume(Token::Kind::IntLit))
+    if (auto intLit = try_consume(Token::Kind::IntLit))
     {
         auto expr = m_allocator.alloc<Node::IntLiteral>();
         expr->intLit = intLit.value();
@@ -306,7 +419,7 @@ std::optional<Node::Term*> Parser::parseTerm()
         *term = expr;
         return term;
     }
-    else if (auto ident = tryConsume(Token::Kind::Identifier))
+    else if (auto ident = try_consume(Token::Kind::Identifier))
     {
         auto expr = m_allocator.alloc<Node::Identifier>();
         expr->identifier = ident.value();
@@ -314,14 +427,14 @@ std::optional<Node::Term*> Parser::parseTerm()
         *term = expr;
         return term;
     }
-    else if (auto openParen = tryConsume(Token::Kind::OpenParen))
+    else if (auto openParen = try_consume(Token::Kind::OpenParen))
     {
-        auto expr = parseExpr();
+        auto expr = parse_expr();
         if (!expr.has_value())
         {
-            add_error(peek_value(-1).info().value(), "Expected expression after open parenthesis.");
+            add_error(peek_value(-1), "Expected expression after open parenthesis.");
         }
-        tryConsume(Token::Kind::CloseParen, "Expected close parenthesis.");
+        try_consume(Token::Kind::CloseParen, "Expected close parenthesis.");
         auto termParen = m_allocator.alloc<Node::TermParen>();
         termParen->expr = expr.value();
         auto term = m_allocator.alloc<Node::Term>();
@@ -331,65 +444,66 @@ std::optional<Node::Term*> Parser::parseTerm()
     return {};
 }
 
-std::optional<Node::Scope *> Parser::parseScope()
+std::optional<Node::Scope *> Parser::parse_scope()
 {
-    if (!tryConsume(Token::Kind::OpenCurly, "Expected { "))
+    if (!try_consume(Token::Kind::OpenCurly, "Expected { "))
     {
         return {};
     }
     auto scope = m_allocator.alloc<Node::Scope>();
-    while (auto stmt = parseStatement()) {
+    while (auto stmt = parse_statement()) {
         scope->statements.push_back(stmt.value());
     }
-    if (!tryConsume(Token::Kind::CloseCurly, "Expected }"))
+    if (!try_consume(Token::Kind::CloseCurly, "Expected }"))
     {
         return {};
     }
     return scope;
 }
 
-void Parser::add_error(Token::Info info, std::string message)
+template<typename ...DescArgT>
+void Parser::add_error(const Token& token, DescArgT ...description)
 {
     consume();
-    const auto error = make_error(info, message);
-    m_errorHandler << error;
+    const auto error = make_error(token, description...);
+    m_error_handler << error;
 }
 
-std::optional<Node::IfPredicate*> Parser::parseIfPredicate() {
+std::optional<Node::IfPredicate*> Parser::parse_if_predicate() {
 
-    if (tryConsume(Token::Kind::Else)) {
+    if (try_consume(Token::Kind::Else)) {
         auto ifPredicate = m_allocator.alloc<Node::IfPredicate>();
-        if (tryConsume(Token::Kind::If)) {
-            tryConsume(Token::Kind::OpenParen, "Expected ( after if");
+        if (try_consume(Token::Kind::If)) {
+            try_consume(Token::Kind::OpenParen, "Expected ( after if");
             auto elseIfStmt = m_allocator.alloc<Node::Statement::ElseIf>();
-            if (auto expr = parseExpr())
+            if (auto expr = parse_expr())
             {
                 elseIfStmt->expr = expr.value();
             }
-            tryConsume(Token::Kind::CloseParen, "Expected ) after if expression");
-            if (auto scope = parseScope())
+            try_consume(Token::Kind::CloseParen, "Expected ) after if expression");
+            if (auto scope = parse_scope())
             {
                 elseIfStmt->scope = scope.value();
             }
             else
             {
                 if (peek_has_value()) {
-                    add_error(peek_value().info().value(), "Invalid scope.");
+                    add_error(peek_value(), "Invalid scope.");
                 }
             }
-            elseIfStmt->pred = parseIfPredicate();
+            elseIfStmt->pred = parse_if_predicate();
 
             *ifPredicate = elseIfStmt;
         } else {
             auto elseStmt = m_allocator.alloc<Node::Statement::Else>();
-            if (auto scope = parseScope())
+            if (auto scope = parse_scope())
             {
                 elseStmt->scope = scope.value();
             }
             else
             {
                 if (peek_has_value()) {
-                    add_error(peek_value().info().value(), "Invalid scope.");
+                    add_error(peek_value(), "Invalid scope.");
                 }
             }
             *ifPredicate = elseStmt;
@@ -398,4 +512,3 @@ std::optional<Node::IfPredicate*> Parser::parseIfPredicate() {
     }
     return {};
 }
-

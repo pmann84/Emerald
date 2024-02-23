@@ -48,6 +48,7 @@ public:
         DoubleQuote,
         Pipe,
         Comment,
+        Exclamation,
         Unexpected
     };
 
@@ -56,6 +57,23 @@ public:
     [[nodiscard]] Kind kind() const { return m_kind; }
     [[nodiscard]] std::optional<Info> info() const { return m_info; }
     [[nodiscard]] std::optional<std::string> value() const { return m_value; }
+
+    [[nodiscard]] inline bool is_binary_operator() const {
+        return kind() == Kind::Plus
+            || kind() == Kind::Minus
+            || kind() == Kind::Asterisk
+            || kind() == Kind::ForwardSlash;
+    }
+
+    [[nodiscard]] inline bool is_relational_operator() const {
+        return kind() == Kind::GreaterThan
+            || kind() == Kind::LessThan;
+    }
+
+    [[nodiscard]] inline bool is_equality_operator() const {
+        return kind() == Kind::Equals
+            || kind() == Kind::Exclamation;
+    }
 
 private:
     Kind m_kind;
@@ -89,3 +107,4 @@ inline std::optional<uint8_t> binaryPrecedence(Token::Kind kind)
             return {};
     }
 }
+

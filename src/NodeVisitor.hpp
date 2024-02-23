@@ -16,7 +16,7 @@ public:
 protected:
     Generator& generator() { return m_generator; }
     assembly_builder& output() { return m_generator.output(); }
-    std::vector<Variable>& variables() { return m_generator.variables(); }
+    std::vector<variable>& variables() { return m_generator.variables(); }
     ErrorHandler& errors() { return m_generator.errors(); }
     std::vector<size_t>& scopes() { return m_generator.scopes(); }
     size_t stackLocation() { return m_generator.stackLocation(); }
@@ -30,17 +30,16 @@ class TermVisitor : public NodeVisitor
 public:
     explicit TermVisitor(Generator& generator): NodeVisitor((generator)) {}
 
-    void operator()(const Node::Identifier* indentExpr)
+    void operator()(const Node::Identifier* identExpr)
     {
-        std::string identifier = indentExpr->identifier.value().value();
+        std::string identifier = identExpr->identifier.value().value();
         auto it = std::find_if(
                 variables().begin(),
                 variables().end(),
-                [&identifier](const Variable& var) { return var.name == identifier; });
+                [&identifier](const variable& var) { return var.name == identifier; });
         if (it == variables().end())
         {
-            const auto error = make_error({}, "Undeclared variable ", identifier);
-            errors() << error;
+            errors() << make_error(identExpr->identifier, "Undeclared variable ", identifier);
             return;
         }
 
@@ -151,12 +150,11 @@ public:
         auto it = std::find_if(
                 variables().begin() + offset,
                 variables().end(),
-                [&letStatement](const Variable& var) { return var.name == letStatement->identifier.value().value(); });
+                [&letStatement](const variable& var) { return var.name == letStatement->identifier.value().value(); });
 //        if (variables().contains(letStatement->identifier.Value.value()))
         if (it != variables().end())
         {
-            const auto error = make_error(letStatement->identifier.info().value(), "Identifier ", letStatement->identifier.value().value(), " already used.");
-            errors() << error;
+            errors() << make_error(letStatement->identifier, "Identifier ", letStatement->identifier.value().value(), " already used.");
         } else {
             variables().push_back({ .name = letStatement->identifier.value().value(), .stackPosition = generator().stackLocation() });
             generator().generate_expr(letStatement->letExpr); // This inserts the variable onto the stack
@@ -165,12 +163,11 @@ public:
     void operator()(const Node::Statement::Assign* assignStatement) {
         const auto it = std::ranges::find_if(
                 variables(),
-                [&assignStatement](const Variable& var) {
+                [&assignStatement](const variable& var) {
                     return var.name == assignStatement->identifier.value().value();
                 });
         if (it == variables().end()) {
-            const auto error = make_error(assignStatement->identifier.info().value(), "Undeclared identifier ", assignStatement->identifier.value().value(), ".");
-            errors() << error;
+            errors() << make_error(assignStatement->identifier, "Undeclared identifier ", assignStatement->identifier.value().value(), ".");
         } else {
             generator().generate_expr(assignStatement->assignExpr); // This evaluates the expression and inserts the variable onto the stack
             generator().pop("rax");

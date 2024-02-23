@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Parser.hpp"
-#include "Variable.hpp"
+#include "variable.hpp"
 #include "Nodes.hpp"
 #include "label_manager.hpp"
 #include "assembly_builder.hpp"
@@ -16,7 +16,7 @@ public:
 
     [[nodiscard]] std::string generateProgram();
     assembly_builder& output();
-    std::vector<Variable>& variables();
+    std::vector<variable>& variables();
     std::vector<size_t>& scopes();
     ErrorHandler& errors();
     size_t stackLocation() const;
@@ -42,7 +42,7 @@ private:
     assembly_builder m_builder;
     const Node::Program m_root;
     size_t m_stackLocation = 0;
-    std::vector<Variable> m_variables;
+    std::vector<variable> m_variables;
     std::vector<size_t> m_scopes;
     ErrorHandler& m_errorHandler;
 };

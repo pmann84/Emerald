@@ -22,7 +22,8 @@ std::map<char, Token::Kind> Tokeniser::SymbolTokenMap = {
     {':', Token::Kind::Colon},
     {'\'', Token::Kind::SingleQuote},
     {'\"', Token::Kind::DoubleQuote},
-    {'|', Token::Kind::Pipe}
+    {'|', Token::Kind::Pipe},
+    {'!', Token::Kind::Exclamation}
 };
 
 std::map<std::string, Token::Kind> Tokeniser::KeywordTokenMap = {

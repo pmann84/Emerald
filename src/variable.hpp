@@ -2,7 +2,7 @@
 
 #include <cstddef>
 
-struct Variable
+struct variable
 {
     std::string name;
     size_t stackPosition;

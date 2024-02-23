@@ -1,14 +1,15 @@
 #pragma once
 
 #include <variant>
-#include "../lib/Tokeniser.hpp"
+#include <Tokeniser.hpp>
+#include <CompilerError.hpp>
 #include "ArenaAllocator.hpp"
 #include "Nodes.hpp"
 
 class Parser
 {
 public:
-    explicit Parser(std::vector<Token> tokens, ErrorHandler& errorHandler);
+    explicit Parser(std::vector<Token> tokens, ErrorHandler& error_handler);
 
     Node::Program parse();
 
@@ -20,21 +21,22 @@ private:
     [[nodiscard]] bool peek_for_rule(std::vector<Token::Kind> rule) const;
 
     Token consume();
-    std::optional<Token> tryConsume(const std::vector<Token::Kind>& tTypes, const std::string& error);
-    std::optional<Token> tryConsume(Token::Kind tType, const std::string& error);
-    std::optional<Token> tryConsume(Token::Kind tType);
+    std::optional<Token> try_consume(const std::vector<Token::Kind>& tTypes, const std::string& error);
+    std::optional<Token> try_consume(Token::Kind tType, const std::string& error);
+    std::optional<Token> try_consume(Token::Kind tType);
 
-    void add_error(Token::Info info, std::string message);
+    template<typename ...DescArgT>
+    void add_error(const Token& token, DescArgT ...description);
 
-    std::optional<Node::Term*> parseTerm();
-    std::optional<Node::Expr*> parseExpr(int minPrecedence = 0);
-    std::optional<Node::Stmt*> parseStatement();
-    std::optional<Node::Scope*> parseScope();
-    std::optional<Node::IfPredicate*> parseIfPredicate();
+    std::optional<Node::Term*> parse_term();
+    std::optional<Node::Expr*> parse_expr(int min_precedence = 0);
+    std::optional<Node::Stmt*> parse_statement();
+    std::optional<Node::Scope*> parse_scope();
+    std::optional<Node::IfPredicate*> parse_if_predicate();
 
 private:
     const std::vector<Token> m_tokens;
-    size_t m_tokenPos = 0;
+    size_t m_token_pos = 0;
     ArenaAllocator m_allocator;
-    ErrorHandler& m_errorHandler;
+    ErrorHandler& m_error_handler;
 };

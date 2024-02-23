@@ -28,10 +28,10 @@ inline std::ostream& operator<<(std::ostream& os, const Message& error)
 }
 
 template<typename ...DescArgT>
-inline Message make_error(Token::Info info, DescArgT ...description) {
+inline Message make_error(const Token& token, DescArgT ...description) {
     std::stringstream ss;
     (ss << ... << description);
-    return { .Kind = Message::Kind::Error, .Info = info, .Description = ss.str() };
+    return { .Kind = Message::Kind::Error, .Info = token.info().value(), .Description = ss.str() };
 }
 
 class ErrorHandler
