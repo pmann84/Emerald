@@ -31,8 +31,8 @@ private:
     std::optional<Node::Term*> parse_term();
     std::optional<Node::Expr*> parse_expr(int min_precedence = 0);
     std::optional<Node::BinExpr*> parse_binary_expr(int min_precedence = 0, Node::Expr* lhs = nullptr);
-    std::optional<Node::RelExpr*> parse_relational_expr();
-    std::optional<Node::EqlExpr*> parse_equality_expr();
+    std::optional<Node::RelExpr*> parse_relational_expr(Node::Expr* lhs = nullptr);
+    std::optional<Node::EqlExpr*> parse_equality_expr(Node::Expr* lhs = nullptr);
     std::optional<Node::Stmt*> parse_statement();
     std::optional<Node::Scope*> parse_scope();
     std::optional<Node::IfPredicate*> parse_if_predicate();

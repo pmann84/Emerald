@@ -128,13 +128,6 @@ std::optional<Node::Expr*> Parser::parse_expr(int min_precedence)
 
             if (!precedence.has_value() || precedence.value() < min_precedence) {
                 break;
-                // if (currentToken.value().is_relational_operator()) {
-                //     const auto rel_expr = parse_relational_expr();
-                //     exprLhs->expr = rel_expr.value();
-                // } else if (currentToken.value().is_equality_operator()) {
-                //     const auto cond_expr = parse_equality_expr();
-                //     exprLhs->expr = cond_expr.value();
-                // }
             }
             auto nextMinPrecedence = precedence.value() + 1;
             const auto expr = parse_binary_expr(nextMinPrecedence, exprLhs);
@@ -142,12 +135,12 @@ std::optional<Node::Expr*> Parser::parse_expr(int min_precedence)
         }
         else if (currentToken.value().is_equality_operator())
         {
-            const auto expr = parse_equality_expr();
+            const auto expr = parse_equality_expr(exprLhs);
             exprLhs->expr = expr.value();
         }
         else if (currentToken.value().is_relational_operator())
         {
-            const auto expr = parse_relational_expr();
+            const auto expr = parse_relational_expr(exprLhs);
             exprLhs->expr = expr.value();
         }
         else
@@ -199,13 +192,128 @@ std::optional<Node::BinExpr*> Parser::parse_binary_expr(int min_precedence, Node
     return {};
 }
 
-std::optional<Node::RelExpr*> Parser::parse_relational_expr()
+std::optional<Node::RelExpr*> Parser::parse_relational_expr(Node::Expr* lhs)
 {
+    Token op = consume();
+    auto expr = m_allocator.alloc<Node::RelExpr>();
+    auto nodeLhsExpr = m_allocator.alloc<Node::Expr>();
+    const bool isInclusiveOperator = peek_for_kind(Token::Kind::Equals);
+    const auto nextToken = peek();
+    switch (op.kind()) {
+        case Token::Kind::LessThan:
+            if (isInclusiveOperator) {
+                consume();
+                // <=
+                auto leqNode = m_allocator.alloc<Node::RelationalExpr::LessThanEqual>();
+                auto exprRhs = parse_expr();
+                if (!exprRhs.has_value())
+                {
+                    add_error(peek_value(), "Unable to parse expression");
+                }
+                nodeLhsExpr->expr = lhs->expr;
+                leqNode->lhs = nodeLhsExpr;
+                leqNode->rhs = exprRhs.value();
+                *expr = leqNode;
+                return expr;
+            } else {
+                // <
+                auto ltNode = m_allocator.alloc<Node::RelationalExpr::LessThan>();
+                auto exprRhs = parse_expr();
+                if (!exprRhs.has_value())
+                {
+                    add_error(peek_value(), "Unable to parse expression");
+                }
+                nodeLhsExpr->expr = lhs->expr;
+                ltNode->lhs = nodeLhsExpr;
+                ltNode->rhs = exprRhs.value();
+                *expr = ltNode;
+                return expr;
+            }
+        case Token::Kind::GreaterThan:
+            if (isInclusiveOperator) {
+                consume();
+                // >=
+                auto geqNode = m_allocator.alloc<Node::RelationalExpr::GreaterThanEqual>();
+                auto exprRhs = parse_expr();
+                if (!exprRhs.has_value())
+                {
+                    add_error(peek_value(), "Unable to parse expression");
+                }
+                nodeLhsExpr->expr = lhs->expr;
+                geqNode->lhs = nodeLhsExpr;
+                geqNode->rhs = exprRhs.value();
+                *expr = geqNode;
+                return expr;
+            } else {
+                // >
+                auto gtNode = m_allocator.alloc<Node::RelationalExpr::GreaterThan>();
+                auto exprRhs = parse_expr();
+                if (!exprRhs.has_value())
+                {
+                    add_error(peek_value(), "Unable to parse expression");
+                }
+                nodeLhsExpr->expr = lhs->expr;
+                gtNode->lhs = nodeLhsExpr;
+                gtNode->rhs = exprRhs.value();
+                *expr = gtNode;
+                return expr;
+            }
+        default:
+            add_error(op, "Invalid relational operator ", op.value().value());
+
+    }
     return {};
 }
 
-std::optional<Node::EqlExpr*> Parser::parse_equality_expr()
+std::optional<Node::EqlExpr*> Parser::parse_equality_expr(Node::Expr* lhs)
 {
+    Token op = consume();
+    auto expr = m_allocator.alloc<Node::EqlExpr>();
+    auto nodeLhsExpr = m_allocator.alloc<Node::Expr>();
+    const bool checkForValidEqualityOperator = peek_for_kind(Token::Kind::Equals);
+    const auto nextToken = peek();
+    if (!checkForValidEqualityOperator)
+    {
+        add_error(op, "Invalid equality operator ", op.value().value(), nextToken.value().value().value());
+        return {};
+    }
+    // We have a valid equality operator
+    switch (op.kind())
+    {
+        // !=
+        case Token::Kind::Exclamation:
+        {
+            consume();
+            auto neqNode = m_allocator.alloc<Node::EqualityExpr::NotEqual>();
+            auto exprRhs = parse_expr();
+            if (!exprRhs.has_value())
+            {
+                add_error(peek_value(), "Unable to parse expression");
+            }
+            nodeLhsExpr->expr = lhs->expr;
+            neqNode->lhs = nodeLhsExpr;
+            neqNode->rhs = exprRhs.value();
+            *expr = neqNode;
+            return expr;
+        }
+        // ==
+        case Token::Kind::Equals: {
+            consume();
+            auto eqNode = m_allocator.alloc<Node::EqualityExpr::Equal>();
+            auto exprRhs = parse_expr();
+            if (!exprRhs.has_value())
+            {
+                add_error(peek_value(), "Unable to parse expression");
+            }
+            nodeLhsExpr->expr = lhs->expr;
+            eqNode->lhs = nodeLhsExpr;
+            eqNode->rhs = exprRhs.value();
+            *expr = eqNode;
+            return expr;
+        }
+        default:
+            add_error(op, "Invalid equality operator ", op.value().value());
+    }
     return {};
 }
 
@@ -410,126 +518,3 @@ std::optional<Node::IfPredicate*> Parser::parse_if_predicate() {
     }
     return {};
 }
-
-
-
-//    if (currentToken.value().is_relational_operator()) {
-//        Token op = consume();
-//        auto expr = m_allocator.alloc<Node::RelExpr>();
-//        auto nodeLhsExpr = m_allocator.alloc<Node::Expr>();
-//        const auto nextToken = peek();
-//        switch (op.kind()) {
-//            case Token::Kind::LessThan:
-//                if (nextToken.has_value() && nextToken.value().kind() == Token::Kind::Equals) {
-//                    consume();
-//                    // TODO: <=
-//                    auto leqNode = m_allocator.alloc<Node::RelationalExpr::LessThanEqual>();
-//                    auto exprRhs = parse_expr();
-//                    if (!exprRhs.has_value())
-//                    {
-//                        add_error(peek_value(), "Unable to parse expression");
-//                    }
-//                    nodeLhsExpr->expr = exprLhs->expr;
-//                    leqNode->lhs = nodeLhsExpr;
-//                    leqNode->rhs = exprRhs.value();
-//                    *expr = leqNode;
-//                } else {
-//                    // TODO: <
-//                    auto ltNode = m_allocator.alloc<Node::RelationalExpr::LessThan>();
-//                    auto exprRhs = parse_expr();
-//                    if (!exprRhs.has_value())
-//                    {
-//                        add_error(peek_value(), "Unable to parse expression");
-//                    }
-//                    nodeLhsExpr->expr = exprLhs->expr;
-//                    ltNode->lhs = nodeLhsExpr;
-//                    ltNode->rhs = exprRhs.value();
-//                    *expr = ltNode;
-//                }
-//                break;
-//            case Token::Kind::GreaterThan:
-//                if (nextToken.has_value() && nextToken.value().kind() == Token::Kind::Equals) {
-//                    consume();
-//                    // TODO: >=
-//                    auto geqNode = m_allocator.alloc<Node::RelationalExpr::GreaterThanEqual>();
-//                    auto exprRhs = parse_expr();
-//                    if (!exprRhs.has_value())
-//                    {
-//                        add_error(peek_value(), "Unable to parse expression");
-//                    }
-//                    nodeLhsExpr->expr = exprLhs->expr;
-//                    geqNode->lhs = nodeLhsExpr;
-//                    geqNode->rhs = exprRhs.value();
-//                    *expr = geqNode;
-//                } else {
-//                    // TODO: >
-//                    auto gtNode = m_allocator.alloc<Node::RelationalExpr::GreaterThan>();
-//                    auto exprRhs = parse_expr();
-//                    if (!exprRhs.has_value())
-//                    {
-//                        add_error(peek_value(), "Unable to parse expression");
-//                    }
-//                    nodeLhsExpr->expr = exprLhs->expr;
-//                    gtNode->lhs = nodeLhsExpr;
-//                    gtNode->rhs = exprRhs.value();
-//                    *expr = gtNode;
-//                }
-//                break;
-//            default:
-//                add_error(op, "Invalid relational operator ", op.value().value());
-//        }
-//        exprLhs->expr = expr;
-//    } else if (currentToken.value().is_equality_operator()) {
-//        auto expr = m_allocator.alloc<Node::EqlExpr>();
-//        auto nodeLhsExpr = m_allocator.alloc<Node::Expr>();
-//        Token op = consume();
-//        const auto nextToken = peek();
-//        switch (op.kind())
-//        {
-//            case Token::Kind::Exclamation:
-//                if (nextToken.has_value() && nextToken.value().kind() == Token::Kind::Equals)
-//                {
-//                    consume();
-//                    // TODO: !=
-//                    auto neqNode = m_allocator.alloc<Node::EqualityExpr::NotEqual>();
-//                    auto exprRhs = parse_expr();
-//                    if (!exprRhs.has_value())
-//                    {
-//                        add_error(peek_value(), "Unable to parse expression");
-//                    }
-//                    nodeLhsExpr->expr = exprLhs->expr;
-//                    neqNode->lhs = nodeLhsExpr;
-//                    neqNode->rhs = exprRhs.value();
-//                    *expr = neqNode;
-//                } else
-//                {
-//                    add_error(op, "Invalid equality operator ", op.value().value(),
-//                              nextToken.value().value().value());
-//                }
-//                break;
-//            case Token::Kind::Equals:
-//                if (nextToken.has_value() && nextToken.value().kind() == Token::Kind::Equals)
-//                {
-//                    consume();
-//                    // TODO: ==
-//                    auto eqNode = m_allocator.alloc<Node::EqualityExpr::Equal>();
-//                    auto exprRhs = parse_expr();
-//                    if (!exprRhs.has_value())
-//                    {
-//                        add_error(peek_value(), "Unable to parse expression");
-//                    }
-//                    nodeLhsExpr->expr = exprLhs->expr;
-//                    eqNode->lhs = nodeLhsExpr;
-//                    eqNode->rhs = exprRhs.value();
-//                    *expr = eqNode;
-//                } else
-//                {
-//                    add_error(op, "Invalid equality operator ", op.value().value(),
-//                              nextToken.value().value().value());
-//                }
-//                break;
-//            default:
-//                add_error(op, "Invalid equality operator ", op.value().value());
-//        }
-//        exprLhs->expr = expr;
-//    }
