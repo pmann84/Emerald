@@ -75,6 +75,21 @@ public:
             || kind() == Kind::Exclamation;
     }
 
+    [[nodiscard]] inline std::optional<uint8_t> binary_precedence() const
+    {
+        switch (kind())
+        {
+            case Token::Kind::Minus:
+            case Token::Kind::Plus:
+                return 0;
+            case Token::Kind::Asterisk:
+            case Token::Kind::ForwardSlash:
+                return 1;
+            default:
+                return {};
+        }
+    }
+
 private:
     Kind m_kind;
     std::optional<Info> m_info;
@@ -91,20 +106,5 @@ inline Token makeToken(Token::Kind kind, std::optional<Token::Info> info, std::o
 inline Token makeToken(Token::Kind kind, std::optional<Token::Info> info) {
     Token t(kind, info, {});
     return t;
-}
-
-inline std::optional<uint8_t> binaryPrecedence(Token::Kind kind)
-{
-    switch (kind)
-    {
-        case Token::Kind::Minus:
-        case Token::Kind::Plus:
-            return 0;
-        case Token::Kind::Asterisk:
-        case Token::Kind::ForwardSlash:
-            return 1;
-        default:
-            return {};
-    }
 }
 
